@@ -146,10 +146,10 @@ export function useStore() {
       prev.map((o) => {
         if (o.id !== orderId) return o;
         const existing = o.items.find((i) => i.menuItemId === menuItemId);
-        if (existing) {
-          return { ...o, items: o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity: i.quantity + 1 } : i)) };
-        }
-        return { ...o, items: [...o.items, { menuItemId, quantity: 1 }] };
+        const newItems = existing
+          ? o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity: i.quantity + 1 } : i))
+          : [...o.items, { menuItemId, quantity: 1, status: "Waiting" as ItemStatus }];
+        return { ...o, items: newItems, status: computeOrderStatus(newItems) };
       })
     );
   }, []);
