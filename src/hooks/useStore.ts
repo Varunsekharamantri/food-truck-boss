@@ -10,9 +10,12 @@ export interface MenuItem {
   updatedAt: string;
 }
 
+export type ItemStatus = "Waiting" | "Preparing" | "Ready" | "Delivered";
+
 export interface OrderItemEntry {
   menuItemId: string;
   quantity: number;
+  status: ItemStatus;
 }
 
 export type OrderStatus = "Waiting" | "Preparing" | "Ready" | "Delivered";
