@@ -1,15 +1,14 @@
 import { useState } from "react";
-import { useStore, BUCKETS, type Bucket, type MenuItem } from "@/hooks/useStore";
-import { formatDateKey, formatDisplay, formatRupee, getNextDay, getPrevDay } from "@/lib/dateUtils";
-import { ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
+import { useStore, BUCKETS, type Bucket, type MenuItem, type CustomerOrder, getNextStatus } from "@/hooks/useStore";
+import { formatDateKey, formatDisplay, formatRupee } from "@/lib/dateUtils";
+import { Plus, Minus, CalendarIcon, ChevronDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { isToday } from "date-fns";
-
-const BUCKET_COLORS: Record<Bucket, string> = {
-  "Rice / Noodles": "border-bucket-rice bg-bucket-rice/10",
-  "Starters": "border-bucket-starters bg-bucket-starters/10",
-  "Shawarma": "border-bucket-shawarma bg-bucket-shawarma/10",
-};
+import { Badge } from "@/components/ui/badge";
+import { format, isToday } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const BUCKET_BADGE: Record<Bucket, string> = {
   "Rice / Noodles": "bg-bucket-rice text-primary-foreground",
@@ -17,121 +16,317 @@ const BUCKET_BADGE: Record<Bucket, string> = {
   "Shawarma": "bg-bucket-shawarma text-primary-foreground",
 };
 
+const STATUS_COLORS: Record<string, string> = {
+  Waiting: "bg-muted text-muted-foreground",
+  Preparing: "bg-primary/20 text-primary",
+  Ready: "bg-accent/20 text-accent",
+  Delivered: "bg-secondary text-secondary-foreground",
+};
+
 export default function OrdersPage() {
-  const { menu, getOrdersForDate, setOrderQuantity } = useStore();
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const { menu, getOrdersForDate, createOrder, updateOrderStatus, addItemToOrder, removeItemFromOrder, deleteOrder } = useStore();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [addingToOrder, setAddingToOrder] = useState<string | null>(null);
   const dateKey = formatDateKey(selectedDate);
   const dayOrders = getOrdersForDate(dateKey);
 
-  const getQty = (itemId: string) => dayOrders.find((o) => o.menuItemId === itemId)?.quantity || 0;
+  const activeOrders = dayOrders.filter((o) => o.status !== "Delivered");
+  const inProgress = dayOrders.filter((o) => o.status === "Preparing" || o.status === "Waiting").length;
+  const readyCount = dayOrders.filter((o) => o.status === "Ready").length;
 
-  let totalItems = 0;
+  const handleNewOrder = () => {
+    createOrder(dateKey);
+  };
+
+  const getItemPrice = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.price || 0;
+  const getItemName = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.name || "Unknown";
+
+  const orderTotal = (order: CustomerOrder) =>
+    order.items.reduce((sum, i) => sum + i.quantity * getItemPrice(i.menuItemId), 0);
+
+  // Analytics
+  const itemTotals: Record<string, number> = {};
   let totalRevenue = 0;
+  dayOrders.forEach((order) => {
+    order.items.forEach((i) => {
+      itemTotals[i.menuItemId] = (itemTotals[i.menuItemId] || 0) + i.quantity;
+      totalRevenue += i.quantity * getItemPrice(i.menuItemId);
+    });
+  });
 
   return (
-    <div className="flex flex-col gap-4 pb-4">
-      {/* Date Selector */}
-      <div className="flex items-center justify-between rounded-lg bg-card p-3 shadow-sm">
-        <Button variant="ghost" size="icon" onClick={() => setSelectedDate(getPrevDay(selectedDate))}>
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <div className="text-center">
-          <p className="font-mono text-lg font-semibold">{formatDisplay(selectedDate)}</p>
-          {isToday(selectedDate) && <p className="text-xs text-muted-foreground">Today</p>}
-        </div>
-        <Button variant="ghost" size="icon" onClick={() => setSelectedDate(getNextDay(selectedDate))}>
-          <ChevronRight className="h-5 w-5" />
+    <div className="flex flex-col gap-3 pb-4">
+      {/* Date Picker */}
+      <div className="flex items-center gap-2">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="flex-1 justify-start gap-2 font-mono">
+              <CalendarIcon className="h-4 w-4" />
+              {formatDisplay(selectedDate)}
+              {isToday(selectedDate) && <Badge variant="secondary" className="ml-1 text-[10px]">Today</Badge>}
+              <ChevronDown className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(d) => d && setSelectedDate(d)}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* Status Counters + New Order */}
+      <div className="flex items-center gap-2">
+        <Button className="flex-1 gap-2 text-base font-bold h-12" onClick={handleNewOrder}>
+          <Plus className="h-5 w-5" /> NEW ORDER
         </Button>
       </div>
 
-      {/* Buckets */}
-      {BUCKETS.map((bucket) => {
-        const items = menu.filter((m) => m.bucket === bucket);
-        let bucketQty = 0;
-        let bucketRev = 0;
-        items.forEach((item) => {
-          const q = getQty(item.id);
-          bucketQty += q;
-          bucketRev += q * item.price;
-        });
-        totalItems += bucketQty;
-        totalRevenue += bucketRev;
+      <div className="flex gap-2">
+        <div className="flex-1 rounded-lg bg-primary/10 p-2 text-center">
+          <p className="text-2xl font-bold font-mono text-primary">{inProgress}</p>
+          <p className="text-[10px] text-muted-foreground">In Progress</p>
+        </div>
+        <div className="flex-1 rounded-lg bg-accent/10 p-2 text-center">
+          <p className="text-2xl font-bold font-mono text-accent">{readyCount}</p>
+          <p className="text-[10px] text-muted-foreground">Ready</p>
+        </div>
+        <div className="flex-1 rounded-lg bg-secondary p-2 text-center">
+          <p className="text-2xl font-bold font-mono">{dayOrders.length}</p>
+          <p className="text-[10px] text-muted-foreground">Total</p>
+        </div>
+      </div>
 
-        return (
-          <div key={bucket} className={`rounded-lg border-l-4 ${BUCKET_COLORS[bucket]} p-3`}>
-            <div className="mb-3 flex items-center justify-between">
-              <span className={`rounded-md px-2 py-1 text-xs font-bold ${BUCKET_BADGE[bucket]}`}>{bucket}</span>
-              <div className="text-right font-mono text-xs text-muted-foreground">
-                {bucketQty} items · {formatRupee(bucketRev)}
+      {/* Active Orders */}
+      {activeOrders.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h2 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Active Orders</h2>
+          {activeOrders.map((order) => (
+            <OrderCard
+              key={order.id}
+              order={order}
+              menu={menu}
+              getItemName={getItemName}
+              getItemPrice={getItemPrice}
+              orderTotal={orderTotal(order)}
+              onStatusChange={() => updateOrderStatus(order.id, getNextStatus(order.status))}
+              onAddItems={() => setAddingToOrder(order.id)}
+              onDelete={() => deleteOrder(order.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Delivered Orders */}
+      {dayOrders.filter((o) => o.status === "Delivered").length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h2 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Delivered</h2>
+          {dayOrders.filter((o) => o.status === "Delivered").map((order) => (
+            <OrderCard
+              key={order.id}
+              order={order}
+              menu={menu}
+              getItemName={getItemName}
+              getItemPrice={getItemPrice}
+              orderTotal={orderTotal(order)}
+              onStatusChange={() => {}}
+              onAddItems={() => {}}
+              onDelete={() => deleteOrder(order.id)}
+              delivered
+            />
+          ))}
+        </div>
+      )}
+
+      {dayOrders.length === 0 && (
+        <div className="rounded-lg bg-card p-8 text-center">
+          <p className="text-muted-foreground">No orders yet. Tap <span className="font-bold text-primary">NEW ORDER</span> to start.</p>
+        </div>
+      )}
+
+      {/* Item Performance */}
+      {dayOrders.length > 0 && (
+        <div className="rounded-lg bg-card p-3 shadow-sm">
+          <h2 className="text-xs font-bold uppercase text-muted-foreground tracking-wider mb-3">Item Performance</h2>
+          {BUCKETS.map((bucket) => {
+            const items = menu.filter((m) => m.bucket === bucket);
+            const bucketItems = items.filter((m) => itemTotals[m.id]);
+            if (bucketItems.length === 0) return null;
+            return (
+              <div key={bucket} className="mb-3">
+                <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold mb-1 ${BUCKET_BADGE[bucket]}`}>{bucket}</span>
+                {bucketItems.map((item) => (
+                  <div key={item.id} className="flex justify-between px-1 py-0.5">
+                    <span className="text-sm">{item.name}</span>
+                    <span className="font-mono text-sm font-bold">{itemTotals[item.id]}</span>
+                  </div>
+                ))}
               </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              {items.length === 0 && <p className="text-xs text-muted-foreground italic">No menu items. Add in Menu Settings.</p>}
-              {items.map((item) => (
-                <OrderRow key={item.id} item={item} qty={getQty(item.id)} dateKey={dateKey} setOrderQuantity={setOrderQuantity} />
-              ))}
-            </div>
+            );
+          })}
+          <div className="border-t pt-2 mt-2 flex justify-between">
+            <span className="text-sm font-bold">Total Revenue</span>
+            <span className="font-mono text-sm font-bold text-revenue">{formatRupee(totalRevenue)}</span>
           </div>
-        );
-      })}
+        </div>
+      )}
 
-      {/* Day Totals */}
-      <div className="rounded-lg bg-card p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">Total Items</p>
-            <p className="font-mono text-2xl font-bold">{totalItems}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-muted-foreground">Total Revenue</p>
-            <p className="font-mono text-2xl font-bold text-revenue">{formatRupee(totalRevenue)}</p>
-          </div>
+      {/* Add Items Dialog */}
+      <AddItemsDialog
+        open={!!addingToOrder}
+        onClose={() => setAddingToOrder(null)}
+        menu={menu}
+        orderId={addingToOrder}
+        order={dayOrders.find((o) => o.id === addingToOrder)}
+        onAdd={addItemToOrder}
+        onRemove={removeItemFromOrder}
+      />
+    </div>
+  );
+}
+
+function OrderCard({
+  order,
+  menu,
+  getItemName,
+  getItemPrice,
+  orderTotal,
+  onStatusChange,
+  onAddItems,
+  onDelete,
+  delivered,
+}: {
+  order: CustomerOrder;
+  menu: MenuItem[];
+  getItemName: (id: string) => string;
+  getItemPrice: (id: string) => number;
+  orderTotal: number;
+  onStatusChange: () => void;
+  onAddItems: () => void;
+  onDelete: () => void;
+  delivered?: boolean;
+}) {
+  const isReady = order.status === "Ready";
+  return (
+    <div className={cn(
+      "rounded-lg bg-card p-3 shadow-sm border",
+      isReady && "border-accent ring-1 ring-accent/30",
+      delivered && "opacity-60"
+    )}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-lg font-bold">#{order.orderNumber}</span>
+          <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", STATUS_COLORS[order.status])}>
+            {order.status}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-muted-foreground font-mono">
+            {format(new Date(order.timestamp), "HH:mm")}
+          </span>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={onDelete}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {order.items.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic mb-2">No items added yet</p>
+      ) : (
+        <div className="mb-2 space-y-0.5">
+          {order.items.map((item) => (
+            <div key={item.menuItemId} className="flex justify-between text-sm">
+              <span>{getItemName(item.menuItemId)} <span className="text-muted-foreground">×{item.quantity}</span></span>
+              <span className="font-mono">{formatRupee(item.quantity * getItemPrice(item.menuItemId))}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between border-t pt-2">
+        <span className="font-mono font-bold text-revenue">{formatRupee(orderTotal)}</span>
+        <div className="flex gap-1.5">
+          {!delivered && (
+            <>
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={onAddItems}>
+                <Plus className="h-3 w-3 mr-1" /> Items
+              </Button>
+              <Button
+                size="sm"
+                className={cn("h-8 text-xs", isReady && "bg-accent hover:bg-accent/90")}
+                onClick={onStatusChange}
+              >
+                {getNextStatus(order.status) === order.status ? order.status : `→ ${getNextStatus(order.status)}`}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function OrderRow({
-  item,
-  qty,
-  dateKey,
-  setOrderQuantity,
+function AddItemsDialog({
+  open,
+  onClose,
+  menu,
+  orderId,
+  order,
+  onAdd,
+  onRemove,
 }: {
-  item: MenuItem;
-  qty: number;
-  dateKey: string;
-  setOrderQuantity: (dateKey: string, menuItemId: string, qty: number) => void;
+  open: boolean;
+  onClose: () => void;
+  menu: MenuItem[];
+  orderId: string | null;
+  order?: CustomerOrder;
+  onAdd: (orderId: string, menuItemId: string) => void;
+  onRemove: (orderId: string, menuItemId: string) => void;
 }) {
+  if (!orderId) return null;
+  const getQty = (menuItemId: string) => order?.items.find((i) => i.menuItemId === menuItemId)?.quantity || 0;
+
   return (
-    <div className="flex items-center justify-between rounded-md bg-card/60 px-3 py-2">
-      <div className="flex-1 min-w-0">
-        <p className="truncate text-sm font-medium">{item.name}</p>
-        <p className="font-mono text-xs text-muted-foreground">{formatRupee(item.price)}</p>
-      </div>
-      <div className="flex items-center gap-1">
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-9 w-9"
-          disabled={qty === 0}
-          onClick={() => setOrderQuantity(dateKey, item.id, qty - 1)}
-        >
-          <Minus className="h-4 w-4" />
-        </Button>
-        <span className="w-8 text-center font-mono text-base font-bold">{qty}</span>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-9 w-9"
-          onClick={() => setOrderQuantity(dateKey, item.id, qty + 1)}
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
-      {qty > 0 && (
-        <p className="ml-3 font-mono text-sm font-semibold text-revenue">{formatRupee(qty * item.price)}</p>
-      )}
-    </div>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-sm max-h-[80dvh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-mono">Add Items — #{order?.orderNumber}</DialogTitle>
+        </DialogHeader>
+        {BUCKETS.map((bucket) => {
+          const items = menu.filter((m) => m.bucket === bucket);
+          if (items.length === 0) return null;
+          return (
+            <div key={bucket} className="mb-3">
+              <p className="text-xs font-bold text-muted-foreground uppercase mb-1">{bucket}</p>
+              {items.map((item) => {
+                const qty = getQty(item.id);
+                return (
+                  <div key={item.id} className="flex items-center justify-between py-1.5">
+                    <div>
+                      <p className="text-sm font-medium">{item.name}</p>
+                      <p className="font-mono text-xs text-muted-foreground">{formatRupee(item.price)}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="outline" size="icon" className="h-9 w-9" disabled={qty === 0} onClick={() => onRemove(orderId, item.id)}>
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <span className="w-7 text-center font-mono font-bold">{qty}</span>
+                      <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => onAdd(orderId, item.id)}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+        <Button className="w-full h-12 text-base font-bold" onClick={onClose}>Done</Button>
+      </DialogContent>
+    </Dialog>
   );
 }

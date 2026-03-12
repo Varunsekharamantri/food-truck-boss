@@ -10,13 +10,20 @@ export interface MenuItem {
   updatedAt: string;
 }
 
-export interface OrderItem {
+export interface OrderItemEntry {
   menuItemId: string;
   quantity: number;
 }
 
-export interface DayOrders {
-  [dateKey: string]: OrderItem[];
+export type OrderStatus = "Waiting" | "Preparing" | "Ready" | "Delivered";
+
+export interface CustomerOrder {
+  id: string;
+  orderNumber: number;
+  dateKey: string;
+  timestamp: string;
+  status: OrderStatus;
+  items: OrderItemEntry[];
 }
 
 export interface InventoryItem {
@@ -30,8 +37,9 @@ export interface InventoryItem {
 
 const STORAGE_KEYS = {
   menu: "truckpos_menu",
-  orders: "truckpos_orders",
+  orders: "truckpos_orders_v2",
   inventory: "truckpos_inventory",
+  orderCounter: "truckpos_order_counter",
 };
 
 function load<T>(key: string, fallback: T): T {
@@ -66,15 +74,24 @@ const DEFAULT_MENU: MenuItem[] = [
   { id: genId(), name: "Paneer Shawarma", bucket: "Shawarma", price: 119, createdAt: nowISO(), updatedAt: nowISO() },
 ];
 
+const ORDER_STATUSES: OrderStatus[] = ["Waiting", "Preparing", "Ready", "Delivered"];
+
+export function getNextStatus(current: OrderStatus): OrderStatus {
+  const idx = ORDER_STATUSES.indexOf(current);
+  return idx < ORDER_STATUSES.length - 1 ? ORDER_STATUSES[idx + 1] : current;
+}
+
 // Hook
 export function useStore() {
   const [menu, setMenu] = useState<MenuItem[]>(() => load(STORAGE_KEYS.menu, DEFAULT_MENU));
-  const [orders, setOrders] = useState<DayOrders>(() => load(STORAGE_KEYS.orders, {}));
+  const [orders, setOrders] = useState<CustomerOrder[]>(() => load(STORAGE_KEYS.orders, []));
   const [inventory, setInventory] = useState<InventoryItem[]>(() => load(STORAGE_KEYS.inventory, []));
+  const [orderCounter, setOrderCounter] = useState<number>(() => load(STORAGE_KEYS.orderCounter, 0));
 
   useEffect(() => save(STORAGE_KEYS.menu, menu), [menu]);
   useEffect(() => save(STORAGE_KEYS.orders, orders), [orders]);
   useEffect(() => save(STORAGE_KEYS.inventory, inventory), [inventory]);
+  useEffect(() => save(STORAGE_KEYS.orderCounter, orderCounter), [orderCounter]);
 
   // Menu
   const addMenuItem = useCallback((item: Omit<MenuItem, "id" | "createdAt" | "updatedAt">) => {
@@ -89,23 +106,57 @@ export function useStore() {
     setMenu((prev) => prev.filter((m) => m.id !== id));
   }, []);
 
-  // Orders
-  const getOrdersForDate = useCallback((dateKey: string) => orders[dateKey] || [], [orders]);
+  // Customer Orders
+  const getOrdersForDate = useCallback((dateKey: string) => orders.filter((o) => o.dateKey === dateKey), [orders]);
 
-  const setOrderQuantity = useCallback((dateKey: string, menuItemId: string, quantity: number) => {
-    setOrders((prev) => {
-      const existing = prev[dateKey] || [];
-      if (quantity <= 0) {
-        return { ...prev, [dateKey]: existing.filter((o) => o.menuItemId !== menuItemId) };
-      }
-      const idx = existing.findIndex((o) => o.menuItemId === menuItemId);
-      if (idx >= 0) {
-        const updated = [...existing];
-        updated[idx] = { ...updated[idx], quantity };
-        return { ...prev, [dateKey]: updated };
-      }
-      return { ...prev, [dateKey]: [...existing, { menuItemId, quantity }] };
-    });
+  const createOrder = useCallback((dateKey: string): CustomerOrder => {
+    const newNum = orderCounter + 1;
+    setOrderCounter(newNum);
+    const order: CustomerOrder = {
+      id: genId(),
+      orderNumber: newNum,
+      dateKey,
+      timestamp: nowISO(),
+      status: "Waiting",
+      items: [],
+    };
+    setOrders((prev) => [...prev, order]);
+    return order;
+  }, [orderCounter]);
+
+  const updateOrderStatus = useCallback((orderId: string, status: OrderStatus) => {
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+  }, []);
+
+  const addItemToOrder = useCallback((orderId: string, menuItemId: string) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o;
+        const existing = o.items.find((i) => i.menuItemId === menuItemId);
+        if (existing) {
+          return { ...o, items: o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity: i.quantity + 1 } : i)) };
+        }
+        return { ...o, items: [...o.items, { menuItemId, quantity: 1 }] };
+      })
+    );
+  }, []);
+
+  const removeItemFromOrder = useCallback((orderId: string, menuItemId: string) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o;
+        const existing = o.items.find((i) => i.menuItemId === menuItemId);
+        if (!existing) return o;
+        if (existing.quantity <= 1) {
+          return { ...o, items: o.items.filter((i) => i.menuItemId !== menuItemId) };
+        }
+        return { ...o, items: o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity: i.quantity - 1 } : i)) };
+      })
+    );
+  }, []);
+
+  const deleteOrder = useCallback((orderId: string) => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
   }, []);
 
   // Inventory
@@ -123,7 +174,7 @@ export function useStore() {
 
   return {
     menu, addMenuItem, updateMenuItem, deleteMenuItem,
-    getOrdersForDate, setOrderQuantity,
+    orders, getOrdersForDate, createOrder, updateOrderStatus, addItemToOrder, removeItemFromOrder, deleteOrder,
     inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem,
   };
 }
