@@ -160,12 +160,41 @@ export function useStore() {
         if (o.id !== orderId) return o;
         const existing = o.items.find((i) => i.menuItemId === menuItemId);
         if (!existing) return o;
-        if (existing.quantity <= 1) {
-          return { ...o, items: o.items.filter((i) => i.menuItemId !== menuItemId) };
-        }
-        return { ...o, items: o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity: i.quantity - 1 } : i)) };
+        const newItems = existing.quantity <= 1
+          ? o.items.filter((i) => i.menuItemId !== menuItemId)
+          : o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity: i.quantity - 1 } : i));
+        return { ...o, items: newItems, status: computeOrderStatus(newItems) };
       })
     );
+  }, []);
+
+  const updateItemStatus = useCallback((orderId: string, menuItemId: string, status: ItemStatus) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o;
+        const newItems = o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, status } : i));
+        return { ...o, items: newItems, status: computeOrderStatus(newItems) };
+      })
+    );
+  }, []);
+
+  const deleteOrder = useCallback((orderId: string) => {
+    setOrders((prev) => {
+      const filtered = prev.filter((o) => o.id !== orderId);
+      // Renumber orders per dateKey
+      const byDate: Record<string, CustomerOrder[]> = {};
+      filtered.forEach((o) => {
+        if (!byDate[o.dateKey]) byDate[o.dateKey] = [];
+        byDate[o.dateKey].push(o);
+      });
+      const renumbered: CustomerOrder[] = [];
+      Object.values(byDate).forEach((dateOrders) => {
+        dateOrders
+          .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+          .forEach((o, idx) => renumbered.push({ ...o, orderNumber: idx + 1 }));
+      });
+      return renumbered;
+    });
   }, []);
 
   const deleteOrder = useCallback((orderId: string) => {
