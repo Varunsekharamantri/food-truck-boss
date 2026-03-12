@@ -10,9 +10,12 @@ export interface MenuItem {
   updatedAt: string;
 }
 
+export type ItemStatus = "Waiting" | "Preparing" | "Ready" | "Delivered";
+
 export interface OrderItemEntry {
   menuItemId: string;
   quantity: number;
+  status: ItemStatus;
 }
 
 export type OrderStatus = "Waiting" | "Preparing" | "Ready" | "Delivered";
@@ -76,9 +79,19 @@ const DEFAULT_MENU: MenuItem[] = [
 
 const ORDER_STATUSES: OrderStatus[] = ["Waiting", "Preparing", "Ready", "Delivered"];
 
-export function getNextStatus(current: OrderStatus): OrderStatus {
-  const idx = ORDER_STATUSES.indexOf(current);
-  return idx < ORDER_STATUSES.length - 1 ? ORDER_STATUSES[idx + 1] : current;
+const ITEM_STATUSES: ItemStatus[] = ["Waiting", "Preparing", "Ready", "Delivered"];
+
+export function getNextItemStatus(current: ItemStatus): ItemStatus {
+  const idx = ITEM_STATUSES.indexOf(current);
+  return idx < ITEM_STATUSES.length - 1 ? ITEM_STATUSES[idx + 1] : current;
+}
+
+export function computeOrderStatus(items: OrderItemEntry[]): OrderStatus {
+  if (items.length === 0) return "Waiting";
+  if (items.every((i) => i.status === "Delivered")) return "Delivered";
+  if (items.every((i) => i.status === "Ready")) return "Ready";
+  if (items.some((i) => i.status === "Preparing")) return "Preparing";
+  return "Waiting";
 }
 
 // Hook
@@ -133,10 +146,10 @@ export function useStore() {
       prev.map((o) => {
         if (o.id !== orderId) return o;
         const existing = o.items.find((i) => i.menuItemId === menuItemId);
-        if (existing) {
-          return { ...o, items: o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity: i.quantity + 1 } : i)) };
-        }
-        return { ...o, items: [...o.items, { menuItemId, quantity: 1 }] };
+        const newItems = existing
+          ? o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity: i.quantity + 1 } : i))
+          : [...o.items, { menuItemId, quantity: 1, status: "Waiting" as ItemStatus }];
+        return { ...o, items: newItems, status: computeOrderStatus(newItems) };
       })
     );
   }, []);
@@ -147,17 +160,43 @@ export function useStore() {
         if (o.id !== orderId) return o;
         const existing = o.items.find((i) => i.menuItemId === menuItemId);
         if (!existing) return o;
-        if (existing.quantity <= 1) {
-          return { ...o, items: o.items.filter((i) => i.menuItemId !== menuItemId) };
-        }
-        return { ...o, items: o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity: i.quantity - 1 } : i)) };
+        const newItems = existing.quantity <= 1
+          ? o.items.filter((i) => i.menuItemId !== menuItemId)
+          : o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity: i.quantity - 1 } : i));
+        return { ...o, items: newItems, status: computeOrderStatus(newItems) };
+      })
+    );
+  }, []);
+
+  const updateItemStatus = useCallback((orderId: string, menuItemId: string, status: ItemStatus) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o;
+        const newItems = o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, status } : i));
+        return { ...o, items: newItems, status: computeOrderStatus(newItems) };
       })
     );
   }, []);
 
   const deleteOrder = useCallback((orderId: string) => {
-    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    setOrders((prev) => {
+      const filtered = prev.filter((o) => o.id !== orderId);
+      // Renumber orders per dateKey
+      const byDate: Record<string, CustomerOrder[]> = {};
+      filtered.forEach((o) => {
+        if (!byDate[o.dateKey]) byDate[o.dateKey] = [];
+        byDate[o.dateKey].push(o);
+      });
+      const renumbered: CustomerOrder[] = [];
+      Object.values(byDate).forEach((dateOrders) => {
+        dateOrders
+          .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+          .forEach((o, idx) => renumbered.push({ ...o, orderNumber: idx + 1 }));
+      });
+      return renumbered;
+    });
   }, []);
+
 
   // Inventory
   const addInventoryItem = useCallback((item: Omit<InventoryItem, "id" | "updatedAt">) => {
@@ -174,7 +213,7 @@ export function useStore() {
 
   return {
     menu, addMenuItem, updateMenuItem, deleteMenuItem,
-    orders, getOrdersForDate, createOrder, updateOrderStatus, addItemToOrder, removeItemFromOrder, deleteOrder,
+    orders, getOrdersForDate, createOrder, updateOrderStatus, addItemToOrder, removeItemFromOrder, updateItemStatus, deleteOrder,
     inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem,
   };
 }
