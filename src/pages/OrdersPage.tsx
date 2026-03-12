@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useStore, BUCKETS, type Bucket, type MenuItem, type CustomerOrder, getNextStatus } from "@/hooks/useStore";
+import { useStore, BUCKETS, type Bucket, type MenuItem, type CustomerOrder, type ItemStatus, getNextItemStatus, computeOrderStatus } from "@/hooks/useStore";
 import { formatDateKey, formatDisplay, formatRupee } from "@/lib/dateUtils";
 import { Plus, Minus, CalendarIcon, ChevronDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,15 +16,22 @@ const BUCKET_BADGE: Record<Bucket, string> = {
   "Shawarma": "bg-bucket-shawarma text-primary-foreground",
 };
 
+const ITEM_STATUS_COLORS: Record<ItemStatus, string> = {
+  Waiting: "bg-muted text-muted-foreground",
+  Preparing: "bg-orange-500/20 text-orange-400",
+  Ready: "bg-accent/20 text-accent",
+  Delivered: "bg-blue-500/20 text-blue-400",
+};
+
 const STATUS_COLORS: Record<string, string> = {
   Waiting: "bg-muted text-muted-foreground",
-  Preparing: "bg-primary/20 text-primary",
+  Preparing: "bg-orange-500/20 text-orange-400",
   Ready: "bg-accent/20 text-accent",
-  Delivered: "bg-secondary text-secondary-foreground",
+  Delivered: "bg-blue-500/20 text-blue-400",
 };
 
 export default function OrdersPage() {
-  const { menu, getOrdersForDate, createOrder, updateOrderStatus, addItemToOrder, removeItemFromOrder, deleteOrder } = useStore();
+  const { menu, getOrdersForDate, createOrder, addItemToOrder, removeItemFromOrder, updateItemStatus, deleteOrder } = useStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [addingToOrder, setAddingToOrder] = useState<string | null>(null);
   const dateKey = formatDateKey(selectedDate);
@@ -33,10 +40,9 @@ export default function OrdersPage() {
   const activeOrders = dayOrders.filter((o) => o.status !== "Delivered");
   const inProgress = dayOrders.filter((o) => o.status === "Preparing" || o.status === "Waiting").length;
   const readyCount = dayOrders.filter((o) => o.status === "Ready").length;
+  const deliveredCount = dayOrders.filter((o) => o.status === "Delivered").length;
 
-  const handleNewOrder = () => {
-    createOrder(dateKey);
-  };
+  const handleNewOrder = () => createOrder(dateKey);
 
   const getItemPrice = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.price || 0;
   const getItemName = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.name || "Unknown";
@@ -79,25 +85,23 @@ export default function OrdersPage() {
         </Popover>
       </div>
 
-      {/* Status Counters + New Order */}
-      <div className="flex items-center gap-2">
-        <Button className="flex-1 gap-2 text-base font-bold h-12" onClick={handleNewOrder}>
-          <Plus className="h-5 w-5" /> NEW ORDER
-        </Button>
-      </div>
+      {/* New Order + Counters */}
+      <Button className="flex-1 gap-2 text-base font-bold h-12" onClick={handleNewOrder}>
+        <Plus className="h-5 w-5" /> NEW ORDER
+      </Button>
 
       <div className="flex gap-2">
-        <div className="flex-1 rounded-lg bg-primary/10 p-2 text-center">
-          <p className="text-2xl font-bold font-mono text-primary">{inProgress}</p>
+        <div className="flex-1 rounded-lg bg-orange-500/10 p-2 text-center">
+          <p className="text-2xl font-bold font-mono text-orange-400">{inProgress}</p>
           <p className="text-[10px] text-muted-foreground">In Progress</p>
         </div>
         <div className="flex-1 rounded-lg bg-accent/10 p-2 text-center">
           <p className="text-2xl font-bold font-mono text-accent">{readyCount}</p>
           <p className="text-[10px] text-muted-foreground">Ready</p>
         </div>
-        <div className="flex-1 rounded-lg bg-secondary p-2 text-center">
-          <p className="text-2xl font-bold font-mono">{dayOrders.length}</p>
-          <p className="text-[10px] text-muted-foreground">Total</p>
+        <div className="flex-1 rounded-lg bg-blue-500/10 p-2 text-center">
+          <p className="text-2xl font-bold font-mono text-blue-400">{deliveredCount}</p>
+          <p className="text-[10px] text-muted-foreground">Delivered</p>
         </div>
       </div>
 
@@ -109,13 +113,12 @@ export default function OrdersPage() {
             <OrderCard
               key={order.id}
               order={order}
-              menu={menu}
               getItemName={getItemName}
               getItemPrice={getItemPrice}
               orderTotal={orderTotal(order)}
-              onStatusChange={() => updateOrderStatus(order.id, getNextStatus(order.status))}
               onAddItems={() => setAddingToOrder(order.id)}
               onDelete={() => deleteOrder(order.id)}
+              onItemStatusChange={(menuItemId, status) => updateItemStatus(order.id, menuItemId, status)}
             />
           ))}
         </div>
@@ -129,13 +132,12 @@ export default function OrdersPage() {
             <OrderCard
               key={order.id}
               order={order}
-              menu={menu}
               getItemName={getItemName}
               getItemPrice={getItemPrice}
               orderTotal={orderTotal(order)}
-              onStatusChange={() => {}}
               onAddItems={() => {}}
               onDelete={() => deleteOrder(order.id)}
+              onItemStatusChange={() => {}}
               delivered
             />
           ))}
@@ -191,23 +193,21 @@ export default function OrdersPage() {
 
 function OrderCard({
   order,
-  menu,
   getItemName,
   getItemPrice,
   orderTotal,
-  onStatusChange,
   onAddItems,
   onDelete,
+  onItemStatusChange,
   delivered,
 }: {
   order: CustomerOrder;
-  menu: MenuItem[];
   getItemName: (id: string) => string;
   getItemPrice: (id: string) => number;
   orderTotal: number;
-  onStatusChange: () => void;
   onAddItems: () => void;
   onDelete: () => void;
+  onItemStatusChange: (menuItemId: string, status: ItemStatus) => void;
   delivered?: boolean;
 }) {
   const isReady = order.status === "Ready";
@@ -237,11 +237,26 @@ function OrderCard({
       {order.items.length === 0 ? (
         <p className="text-xs text-muted-foreground italic mb-2">No items added yet</p>
       ) : (
-        <div className="mb-2 space-y-0.5">
+        <div className="mb-2 space-y-1">
           {order.items.map((item) => (
-            <div key={item.menuItemId} className="flex justify-between text-sm">
-              <span>{getItemName(item.menuItemId)} <span className="text-muted-foreground">×{item.quantity}</span></span>
-              <span className="font-mono">{formatRupee(item.quantity * getItemPrice(item.menuItemId))}</span>
+            <div key={item.menuItemId} className="flex items-center justify-between text-sm gap-1">
+              <div className="flex-1 min-w-0">
+                <span className="truncate">{getItemName(item.menuItemId)} <span className="text-muted-foreground">×{item.quantity}</span></span>
+                <span className="font-mono text-xs text-muted-foreground ml-1">{formatRupee(item.quantity * getItemPrice(item.menuItemId))}</span>
+              </div>
+              {!delivered && (
+                <button
+                  onClick={() => onItemStatusChange(item.menuItemId, getNextItemStatus(item.status))}
+                  className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 transition-colors", ITEM_STATUS_COLORS[item.status])}
+                >
+                  {item.status}
+                </button>
+              )}
+              {delivered && (
+                <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0", ITEM_STATUS_COLORS[item.status])}>
+                  {item.status}
+                </span>
+              )}
             </div>
           ))}
         </div>
@@ -249,22 +264,11 @@ function OrderCard({
 
       <div className="flex items-center justify-between border-t pt-2">
         <span className="font-mono font-bold text-revenue">{formatRupee(orderTotal)}</span>
-        <div className="flex gap-1.5">
-          {!delivered && (
-            <>
-              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={onAddItems}>
-                <Plus className="h-3 w-3 mr-1" /> Items
-              </Button>
-              <Button
-                size="sm"
-                className={cn("h-8 text-xs", isReady && "bg-accent hover:bg-accent/90")}
-                onClick={onStatusChange}
-              >
-                {getNextStatus(order.status) === order.status ? order.status : `→ ${getNextStatus(order.status)}`}
-              </Button>
-            </>
-          )}
-        </div>
+        {!delivered && (
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={onAddItems}>
+            <Plus className="h-3 w-3 mr-1" /> Items
+          </Button>
+        )}
       </div>
     </div>
   );
