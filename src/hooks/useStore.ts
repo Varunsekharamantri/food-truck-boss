@@ -79,9 +79,19 @@ const DEFAULT_MENU: MenuItem[] = [
 
 const ORDER_STATUSES: OrderStatus[] = ["Waiting", "Preparing", "Ready", "Delivered"];
 
-export function getNextStatus(current: OrderStatus): OrderStatus {
-  const idx = ORDER_STATUSES.indexOf(current);
-  return idx < ORDER_STATUSES.length - 1 ? ORDER_STATUSES[idx + 1] : current;
+const ITEM_STATUSES: ItemStatus[] = ["Waiting", "Preparing", "Ready", "Delivered"];
+
+export function getNextItemStatus(current: ItemStatus): ItemStatus {
+  const idx = ITEM_STATUSES.indexOf(current);
+  return idx < ITEM_STATUSES.length - 1 ? ITEM_STATUSES[idx + 1] : current;
+}
+
+export function computeOrderStatus(items: OrderItemEntry[]): OrderStatus {
+  if (items.length === 0) return "Waiting";
+  if (items.every((i) => i.status === "Delivered")) return "Delivered";
+  if (items.every((i) => i.status === "Ready")) return "Ready";
+  if (items.some((i) => i.status === "Preparing")) return "Preparing";
+  return "Waiting";
 }
 
 // Hook
