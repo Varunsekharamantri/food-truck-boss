@@ -197,9 +197,6 @@ export function useStore() {
     });
   }, []);
 
-  const deleteOrder = useCallback((orderId: string) => {
-    setOrders((prev) => prev.filter((o) => o.id !== orderId));
-  }, []);
 
   // Inventory
   const addInventoryItem = useCallback((item: Omit<InventoryItem, "id" | "updatedAt">) => {
