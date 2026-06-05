@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 export interface MenuItem {
   id: string;
   name: string;
-  bucket: "Rice / Noodles" | "Starters" | "Shawarma";
+  bucket: "Rice / Noodles" | "Starters" | "Shawarma" | "BBQ" | "Add-ons";
   price: number;
   createdAt: string;
   updatedAt: string;
