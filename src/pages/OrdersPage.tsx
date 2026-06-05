@@ -14,6 +14,8 @@ const BUCKET_BADGE: Record<Bucket, string> = {
   "Rice / Noodles": "bg-bucket-rice text-primary-foreground",
   "Starters": "bg-bucket-starters text-accent-foreground",
   "Shawarma": "bg-bucket-shawarma text-primary-foreground",
+  "BBQ": "bg-bucket-bbq text-primary-foreground",
+  "Add-ons": "bg-bucket-addons text-primary-foreground",
 };
 
 const ITEM_STATUS_COLORS: Record<ItemStatus, string> = {

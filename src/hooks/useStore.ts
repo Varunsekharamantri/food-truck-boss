@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 export interface MenuItem {
   id: string;
   name: string;
-  bucket: "Rice / Noodles" | "Starters" | "Shawarma";
+  bucket: "Rice / Noodles" | "Starters" | "Shawarma" | "BBQ" | "Add-ons";
   price: number;
   createdAt: string;
   updatedAt: string;
@@ -39,7 +39,7 @@ export interface InventoryItem {
 }
 
 const STORAGE_KEYS = {
-  menu: "truckpos_menu",
+  menu: "truckpos_menu_v3",
   orders: "truckpos_orders_v2",
   inventory: "truckpos_inventory",
   orderCounter: "truckpos_order_counter",
@@ -68,13 +68,57 @@ function nowISO() {
 
 // Default menu items
 const DEFAULT_MENU: MenuItem[] = [
-  { id: genId(), name: "Chicken Rice", bucket: "Rice / Noodles", price: 119, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Veg Rice", bucket: "Rice / Noodles", price: 99, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Egg Noodles", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Paneer Tikka", bucket: "Starters", price: 149, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Chicken 65", bucket: "Starters", price: 169, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Chicken Shawarma", bucket: "Shawarma", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Paneer Shawarma", bucket: "Shawarma", price: 119, createdAt: nowISO(), updatedAt: nowISO() },
+  // Non-Veg Starters
+  { id: genId(), name: "Chicken 65", bucket: "Starters", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Chicken Lollypop", bucket: "Starters", price: 149, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Honey Chicken", bucket: "Starters", price: 149, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Lemon Chicken", bucket: "Starters", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Dragon Chicken", bucket: "Starters", price: 159, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Pepper Chicken", bucket: "Starters", price: 149, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Garlic Chicken", bucket: "Starters", price: 149, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Chicken Manchurian", bucket: "Starters", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Chilli Chicken", bucket: "Starters", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Egg Manchurian", bucket: "Starters", price: 99, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Egg Chilli", bucket: "Starters", price: 99, createdAt: nowISO(), updatedAt: nowISO() },
+  // Veg Starters
+  { id: genId(), name: "Gobi 65", bucket: "Starters", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Gobi Manchurian", bucket: "Starters", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Gobi Chilli", bucket: "Starters", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Paneer 65", bucket: "Starters", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Paneer Salt Pepper", bucket: "Starters", price: 149, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Paneer Manchurian", bucket: "Starters", price: 159, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Paneer Chilli", bucket: "Starters", price: 159, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Mushroom 65", bucket: "Starters", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Mushroom Salt Pepper", bucket: "Starters", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Mushroom Manchurian", bucket: "Starters", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Mushroom Chilli", bucket: "Starters", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
+  // Rice & Noodles
+  { id: genId(), name: "Chicken Rice/Noodles", bucket: "Rice / Noodles", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Egg Rice/Noodles", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Veg Rice/Noodles", bucket: "Rice / Noodles", price: 99, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Paneer Rice/Noodles", bucket: "Rice / Noodles", price: 119, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Mushroom Rice/Noodles", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Gobi Rice/Noodles", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
+  // Shawarma (Roll / Plate split into separate items)
+  { id: genId(), name: "Shawarma Bun", bucket: "Shawarma", price: 59, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Regular Shawarma Roll", bucket: "Shawarma", price: 79, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Regular Shawarma Plate", bucket: "Shawarma", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Mexican Shawarma Roll", bucket: "Shawarma", price: 89, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Mexican Shawarma Plate", bucket: "Shawarma", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Peri Peri Shawarma Roll", bucket: "Shawarma", price: 89, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Peri Peri Shawarma Plate", bucket: "Shawarma", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Schezwan Shawarma Roll", bucket: "Shawarma", price: 89, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Schezwan Shawarma Plate", bucket: "Shawarma", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Full Meat Shawarma Roll", bucket: "Shawarma", price: 119, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Full Meat Shawarma Plate", bucket: "Shawarma", price: 169, createdAt: nowISO(), updatedAt: nowISO() },
+  // BBQ
+  { id: genId(), name: "Chicken BBQ", bucket: "BBQ", price: 159, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Chicken Alfaham BBQ", bucket: "BBQ", price: 159, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Chicken Pepper BBQ", bucket: "BBQ", price: 169, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Paneer BBQ", bucket: "BBQ", price: 149, createdAt: nowISO(), updatedAt: nowISO() },
+  // Add-ons (kept at ₹10 each as per request)
+  { id: genId(), name: "Schezwan Add-on", bucket: "Add-ons", price: 10, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Parcel", bucket: "Add-ons", price: 10, createdAt: nowISO(), updatedAt: nowISO() },
 ];
 
 const ORDER_STATUSES: OrderStatus[] = ["Waiting", "Preparing", "Ready", "Delivered"];
@@ -218,5 +262,5 @@ export function useStore() {
   };
 }
 
-export const BUCKETS = ["Rice / Noodles", "Starters", "Shawarma"] as const;
+export const BUCKETS = ["Rice / Noodles", "Starters", "Shawarma", "BBQ", "Add-ons"] as const;
 export type Bucket = (typeof BUCKETS)[number];

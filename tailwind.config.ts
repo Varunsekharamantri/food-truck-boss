@@ -42,6 +42,8 @@ export default {
           rice: "hsl(var(--bucket-rice))",
           starters: "hsl(var(--bucket-starters))",
           shawarma: "hsl(var(--bucket-shawarma))",
+          bbq: "hsl(var(--bucket-bbq))",
+          addons: "hsl(var(--bucket-addons))",
         },
         revenue: "hsl(var(--revenue))",
       },
