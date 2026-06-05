@@ -39,7 +39,7 @@ export interface InventoryItem {
 }
 
 const STORAGE_KEYS = {
-  menu: "truckpos_menu",
+  menu: "truckpos_menu_v3",
   orders: "truckpos_orders_v2",
   inventory: "truckpos_inventory",
   orderCounter: "truckpos_order_counter",
