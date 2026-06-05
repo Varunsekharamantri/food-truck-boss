@@ -92,13 +92,20 @@ const DEFAULT_MENU: MenuItem[] = [
   { id: genId(), name: "Mushroom Salt Pepper", bucket: "Starters", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
   { id: genId(), name: "Mushroom Manchurian", bucket: "Starters", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
   { id: genId(), name: "Mushroom Chilli", bucket: "Starters", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
-  // Rice & Noodles
-  { id: genId(), name: "Chicken Rice/Noodles", bucket: "Rice / Noodles", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Egg Rice/Noodles", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Veg Rice/Noodles", bucket: "Rice / Noodles", price: 99, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Paneer Rice/Noodles", bucket: "Rice / Noodles", price: 119, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Mushroom Rice/Noodles", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Gobi Rice/Noodles", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
+  // Rice
+  { id: genId(), name: "Chicken Rice", bucket: "Rice / Noodles", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Egg Rice", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Veg Rice", bucket: "Rice / Noodles", price: 99, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Paneer Rice", bucket: "Rice / Noodles", price: 119, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Mushroom Rice", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Gobi Rice", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
+  // Noodles
+  { id: genId(), name: "Chicken Noodles", bucket: "Rice / Noodles", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Egg Noodles", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Veg Noodles", bucket: "Rice / Noodles", price: 99, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Paneer Noodles", bucket: "Rice / Noodles", price: 119, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Mushroom Noodles", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
+  { id: genId(), name: "Gobi Noodles", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
   // Shawarma (Roll / Plate split into separate items)
   { id: genId(), name: "Shawarma Bun", bucket: "Shawarma", price: 59, createdAt: nowISO(), updatedAt: nowISO() },
   { id: genId(), name: "Regular Shawarma Roll", bucket: "Shawarma", price: 79, createdAt: nowISO(), updatedAt: nowISO() },
