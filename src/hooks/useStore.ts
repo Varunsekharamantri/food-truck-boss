@@ -262,5 +262,5 @@ export function useStore() {
   };
 }
 
-export const BUCKETS = ["Rice / Noodles", "Starters", "Shawarma"] as const;
+export const BUCKETS = ["Rice / Noodles", "Starters", "Shawarma", "BBQ", "Add-ons"] as const;
 export type Bucket = (typeof BUCKETS)[number];
