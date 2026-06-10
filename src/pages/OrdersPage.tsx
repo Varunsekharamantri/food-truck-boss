@@ -52,6 +52,25 @@ export default function OrdersPage() {
   const orderTotal = (order: CustomerOrder) =>
     order.items.reduce((sum, i) => sum + i.quantity * getItemPrice(i.menuItemId), 0);
 
+  // To-Do (Waiting items aggregated)
+  const todoMap: Record<string, { qty: number; earliest: string; orderNumbers: number[] }> = {};
+  dayOrders.forEach((order) => {
+    order.items.forEach((i) => {
+      if (i.status !== "Waiting") return;
+      const existing = todoMap[i.menuItemId];
+      if (existing) {
+        existing.qty += i.quantity;
+        if (order.timestamp < existing.earliest) existing.earliest = order.timestamp;
+        if (!existing.orderNumbers.includes(order.orderNumber)) existing.orderNumbers.push(order.orderNumber);
+      } else {
+        todoMap[i.menuItemId] = { qty: i.quantity, earliest: order.timestamp, orderNumbers: [order.orderNumber] };
+      }
+    });
+  });
+  const todoList = Object.entries(todoMap)
+    .map(([menuItemId, v]) => ({ menuItemId, ...v }))
+    .sort((a, b) => a.earliest.localeCompare(b.earliest));
+
   // Analytics
   const itemTotals: Record<string, number> = {};
   let totalRevenue = 0;
@@ -106,6 +125,38 @@ export default function OrdersPage() {
           <p className="text-[10px] text-muted-foreground">Delivered</p>
         </div>
       </div>
+
+      {/* To-Do (Waiting items aggregated) */}
+      {todoList.length > 0 && (
+        <div className="rounded-lg bg-card p-3 shadow-sm border border-orange-500/30">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs font-bold uppercase text-orange-400 tracking-wider">Cook To-Do</h2>
+            <span className="text-[10px] text-muted-foreground">Oldest first</span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {todoList.map((t, idx) => (
+              <div
+                key={t.menuItemId}
+                className={cn(
+                  "flex items-center justify-between rounded-md px-2 py-1.5",
+                  idx === 0 ? "bg-orange-500/20 ring-1 ring-orange-500/50" : "bg-muted/40"
+                )}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className={cn("text-sm font-medium truncate", idx === 0 && "text-orange-300 font-bold")}>
+                    {getItemName(t.menuItemId)}
+                    {idx === 0 && <span className="ml-2 text-[9px] uppercase tracking-wider">Do first</span>}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-mono">
+                    #{t.orderNumbers.join(", #")} · {format(new Date(t.earliest), "HH:mm")}
+                  </p>
+                </div>
+                <span className="font-mono text-lg font-bold ml-2 shrink-0">×{t.qty}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Active Orders */}
       {activeOrders.length > 0 && (
