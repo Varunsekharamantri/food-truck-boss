@@ -50,6 +50,7 @@ export default function Index() {
         {tab === "menu" && <MenuSettingsPage />}
         {tab === "inventory" && <InventoryPage />}
         {tab === "expenses" && <ExpensesPage />}
+        {tab === "profits" && <ProfitsPage />}
       </main>
 
       {/* Bottom Nav */}
