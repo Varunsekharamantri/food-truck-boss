@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
-import { ClipboardList, Settings, Package, Moon, Sun } from "lucide-react";
+import { ClipboardList, Settings, Package, Moon, Sun, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import OrdersPage from "@/pages/OrdersPage";
 import MenuSettingsPage from "@/pages/MenuSettingsPage";
 import InventoryPage from "@/pages/InventoryPage";
+import ExpensesPage from "@/pages/ExpensesPage";
 
-type Tab = "orders" | "menu" | "inventory";
+type Tab = "orders" | "menu" | "inventory" | "expenses";
 
 const TABS: { key: Tab; label: string; icon: typeof ClipboardList }[] = [
   { key: "orders", label: "Orders", icon: ClipboardList },
   { key: "menu", label: "Menu", icon: Settings },
   { key: "inventory", label: "Inventory", icon: Package },
+  { key: "expenses", label: "Expenses", icon: Receipt },
 ];
 
 export default function Index() {
@@ -45,6 +47,7 @@ export default function Index() {
         {tab === "orders" && <OrdersPage />}
         {tab === "menu" && <MenuSettingsPage />}
         {tab === "inventory" && <InventoryPage />}
+        {tab === "expenses" && <ExpensesPage />}
       </main>
 
       {/* Bottom Nav */}
