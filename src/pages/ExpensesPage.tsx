@@ -8,6 +8,7 @@ import { AddExpenseDialog } from "@/components/AddExpenseDialog";
 import { formatDateKey, formatDisplay, getNextDay, getPrevDay, formatRupee } from "@/lib/dateUtils";
 
 export default function ExpensesPage() {
+  const { user, signInWithGoogle, signOut } = useAuth();
   const { addExpense, deleteExpense, getForDate } = useExpenses();
   const [date, setDate] = useState<Date>(new Date());
   const [open, setOpen] = useState(false);
@@ -18,6 +19,20 @@ export default function ExpensesPage() {
     [getForDate, dateKey],
   );
   const total = useMemo(() => dayExpenses.reduce((s, e) => s + e.amount, 0), [dayExpenses]);
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20">
+        <Receipt className="h-12 w-12 text-muted-foreground opacity-50" />
+        <p className="text-center text-sm text-muted-foreground">
+          Sign in to view and manage expenses
+        </p>
+        <Button onClick={signInWithGoogle} className="gap-2">
+          <LogIn className="h-4 w-4" /> Sign in with Google
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="py-3">
