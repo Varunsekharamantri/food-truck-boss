@@ -41,6 +41,96 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory: {
+        Row: {
+          cost_per_unit: number
+          created_at: string
+          id: string
+          name: string
+          quantity: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          cost_per_unit: number
+          created_at?: string
+          id?: string
+          name: string
+          quantity: number
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          cost_per_unit?: number
+          created_at?: string
+          id?: string
+          name?: string
+          quantity?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      menu_items: {
+        Row: {
+          bucket: string
+          created_at: string
+          id: string
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          id?: string
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          id?: string
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          created_at: string
+          date_key: string
+          id: string
+          items: Json
+          order_number: number
+          status: string
+          ts: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_key: string
+          id?: string
+          items?: Json
+          order_number: number
+          status?: string
+          ts?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_key?: string
+          id?: string
+          items?: Json
+          order_number?: number
+          status?: string
+          ts?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
