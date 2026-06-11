@@ -197,14 +197,21 @@ export function useStore() {
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
   }, []);
 
+  // Variants of the same menu item with different spicy/parcel flags live on separate lines.
   const addItemToOrder = useCallback((orderId: string, menuItemId: string) => {
     setOrders((prev) =>
       prev.map((o) => {
         if (o.id !== orderId) return o;
-        const existing = o.items.find((i) => i.menuItemId === menuItemId);
-        const newItems = existing
-          ? o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity: i.quantity + 1 } : i))
-          : [...o.items, { menuItemId, quantity: 1, status: "Waiting" as ItemStatus }];
+        // Merge into an existing "plain" (no spicy, no parcel) line for this menu item.
+        const plain = o.items.find(
+          (i) => i.menuItemId === menuItemId && !i.spicy && !i.parcel
+        );
+        const newItems = plain
+          ? o.items.map((i) => (i.id === plain.id ? { ...i, quantity: i.quantity + 1 } : i))
+          : [
+              ...o.items,
+              { id: genId(), menuItemId, quantity: 1, status: "Waiting" as ItemStatus },
+            ];
         return { ...o, items: newItems, status: computeOrderStatus(newItems) };
       })
     );
@@ -214,32 +221,89 @@ export function useStore() {
     setOrders((prev) =>
       prev.map((o) => {
         if (o.id !== orderId) return o;
-        const existing = o.items.find((i) => i.menuItemId === menuItemId);
-        if (!existing) return o;
-        const newItems = existing.quantity <= 1
-          ? o.items.filter((i) => i.menuItemId !== menuItemId)
-          : o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, quantity: i.quantity - 1 } : i));
+        // Prefer removing from the plain line first; otherwise from any line with this menu item.
+        const target =
+          o.items.find((i) => i.menuItemId === menuItemId && !i.spicy && !i.parcel) ||
+          o.items.find((i) => i.menuItemId === menuItemId);
+        if (!target) return o;
+        const newItems = target.quantity <= 1
+          ? o.items.filter((i) => i.id !== target.id)
+          : o.items.map((i) => (i.id === target.id ? { ...i, quantity: i.quantity - 1 } : i));
         return { ...o, items: newItems, status: computeOrderStatus(newItems) };
       })
     );
   }, []);
 
-  const updateItemStatus = useCallback((orderId: string, menuItemId: string, status: ItemStatus) => {
+  const updateItemStatus = useCallback((orderId: string, lineId: string, status: ItemStatus) => {
     setOrders((prev) =>
       prev.map((o) => {
         if (o.id !== orderId) return o;
-        const newItems = o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, status } : i));
+        const newItems = o.items.map((i) => (i.id === lineId ? { ...i, status } : i));
         return { ...o, items: newItems, status: computeOrderStatus(newItems) };
       })
     );
   }, []);
 
-  const toggleItemFlag = useCallback((orderId: string, menuItemId: string, flag: "spicy" | "parcel") => {
+  // Toggling a flag on a line with quantity > 1 splits one unit off into its own variant line
+  // (merging with a matching variant if one already exists). This keeps mixed-variant orders
+  // accurate, e.g. 2× Chicken Rice where only one is parcel.
+  const toggleItemFlag = useCallback((orderId: string, lineId: string, flag: "spicy" | "parcel") => {
     setOrders((prev) =>
       prev.map((o) => {
         if (o.id !== orderId) return o;
-        const newItems = o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, [flag]: !i[flag] } : i));
-        return { ...o, items: newItems };
+        const line = o.items.find((i) => i.id === lineId);
+        if (!line) return o;
+        const nextSpicy = flag === "spicy" ? !line.spicy : !!line.spicy;
+        const nextParcel = flag === "parcel" ? !line.parcel : !!line.parcel;
+
+        // Whole line toggles when only 1 unit — try to merge with matching variant.
+        if (line.quantity <= 1) {
+          const mergeTarget = o.items.find(
+            (i) =>
+              i.id !== line.id &&
+              i.menuItemId === line.menuItemId &&
+              !!i.spicy === nextSpicy &&
+              !!i.parcel === nextParcel &&
+              i.status === line.status
+          );
+          const newItems = mergeTarget
+            ? o.items
+                .filter((i) => i.id !== line.id)
+                .map((i) => (i.id === mergeTarget.id ? { ...i, quantity: i.quantity + 1 } : i))
+            : o.items.map((i) =>
+                i.id === line.id ? { ...i, spicy: nextSpicy, parcel: nextParcel } : i
+              );
+          return { ...o, items: newItems, status: computeOrderStatus(newItems) };
+        }
+
+        // Split: take 1 unit off this line and apply the toggled flags to it.
+        const decremented = o.items.map((i) =>
+          i.id === line.id ? { ...i, quantity: i.quantity - 1 } : i
+        );
+        const mergeTarget = decremented.find(
+          (i) =>
+            i.menuItemId === line.menuItemId &&
+            !!i.spicy === nextSpicy &&
+            !!i.parcel === nextParcel &&
+            i.status === line.status &&
+            i.id !== line.id
+        );
+        const newItems = mergeTarget
+          ? decremented.map((i) =>
+              i.id === mergeTarget.id ? { ...i, quantity: i.quantity + 1 } : i
+            )
+          : [
+              ...decremented,
+              {
+                id: genId(),
+                menuItemId: line.menuItemId,
+                quantity: 1,
+                status: line.status,
+                spicy: nextSpicy,
+                parcel: nextParcel,
+              },
+            ];
+        return { ...o, items: newItems, status: computeOrderStatus(newItems) };
       })
     );
   }, []);
