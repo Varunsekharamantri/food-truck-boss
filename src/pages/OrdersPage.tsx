@@ -176,8 +176,8 @@ export default function OrdersPage() {
               orderTotal={orderTotal(order)}
               onAddItems={() => setAddingToOrder(order.id)}
               onDelete={() => deleteOrder(order.id)}
-              onItemStatusChange={(menuItemId, status) => updateItemStatus(order.id, menuItemId, status)}
-              onToggleFlag={(menuItemId, flag) => toggleItemFlag(order.id, menuItemId, flag)}
+              onItemStatusChange={(lineId, status) => updateItemStatus(order.id, lineId, status)}
+              onToggleFlag={(lineId, flag) => toggleItemFlag(order.id, lineId, flag)}
             />
           ))}
         </div>
