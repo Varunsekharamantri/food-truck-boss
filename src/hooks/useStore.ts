@@ -167,7 +167,7 @@ export function useStore() {
   const loadOrders = useCallback(async () => {
     const { data, error } = await supabase.from("orders").select("*").order("ts", { ascending: true });
     if (error) return;
-    setOrders((data as OrderRow[]).map(orderFromRow));
+    setOrders((data as unknown as OrderRow[]).map(orderFromRow));
   }, []);
 
   const loadInventory = useCallback(async () => {
@@ -222,7 +222,7 @@ export function useStore() {
       toast({ title: "Couldn't create order", description: error.message, variant: "destructive" });
       return null;
     }
-    return orderFromRow(data as OrderRow);
+    return orderFromRow(data as unknown as OrderRow);
   }, [orders]);
 
   const updateOrderStatus = useCallback(async (orderId: string, status: OrderStatus) => {
@@ -231,7 +231,7 @@ export function useStore() {
 
   const persistOrderItems = async (orderId: string, items: OrderItemEntry[]) => {
     const status = computeOrderStatus(items);
-    await supabase.from("orders").update({ items, status }).eq("id", orderId);
+    await supabase.from("orders").update({ items: items as unknown as never, status }).eq("id", orderId);
   };
 
   const addItemToOrder = useCallback(async (orderId: string, menuItemId: string) => {
@@ -315,7 +315,7 @@ export function useStore() {
   }, []);
 
   const updateInventoryItem = useCallback(async (id: string, updates: Partial<Pick<InventoryItem, "name" | "quantity" | "unit" | "costPerUnit">>) => {
-    const payload: Record<string, unknown> = {};
+    const payload: { name?: string; quantity?: number; unit?: string; cost_per_unit?: number } = {};
     if (updates.name !== undefined) payload.name = updates.name;
     if (updates.quantity !== undefined) payload.quantity = updates.quantity;
     if (updates.unit !== undefined) payload.unit = updates.unit;
