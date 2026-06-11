@@ -391,7 +391,8 @@ function AddItemsDialog({
   onRemove: (orderId: string, menuItemId: string) => void;
 }) {
   if (!orderId) return null;
-  const getQty = (menuItemId: string) => order?.items.find((i) => i.menuItemId === menuItemId)?.quantity || 0;
+  const getQty = (menuItemId: string) =>
+    order?.items.filter((i) => i.menuItemId === menuItemId).reduce((s, i) => s + i.quantity, 0) || 0;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
