@@ -140,16 +140,17 @@ export default function OrdersPage() {
           <div className="flex flex-col gap-1.5">
             {todoList.map((t, idx) => (
               <div
-                key={t.menuItemId}
+                key={t.key}
                 className={cn(
                   "flex items-center justify-between rounded-md px-2 py-1.5",
                   idx === 0 ? "bg-orange-500/20 ring-1 ring-orange-500/50" : "bg-muted/40"
                 )}
               >
                 <div className="flex-1 min-w-0">
-                  <p className={cn("text-sm font-medium truncate", idx === 0 && "text-orange-300 font-bold")}>
-                    {getItemName(t.menuItemId)}
-                    {idx === 0 && <span className="ml-2 text-[9px] uppercase tracking-wider">Do first</span>}
+                  <p className={cn("text-sm font-medium truncate flex items-center gap-1", idx === 0 && "text-orange-300 font-bold")}>
+                    <span className="truncate">{getItemName(t.menuItemId)}</span>
+                    {t.spicy && <Flame className="h-3 w-3 text-red-500 shrink-0" />}
+                    {idx === 0 && <span className="ml-1 text-[9px] uppercase tracking-wider">Do first</span>}
                   </p>
                   <p className="text-[10px] text-muted-foreground font-mono">
                     #{t.orderNumbers.join(", #")} · {format(new Date(t.earliest), "HH:mm")}
