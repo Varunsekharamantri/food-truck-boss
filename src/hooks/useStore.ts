@@ -13,6 +13,7 @@ export interface MenuItem {
 export type ItemStatus = "Waiting" | "Preparing" | "Ready" | "Delivered";
 
 export interface OrderItemEntry {
+  id: string;
   menuItemId: string;
   quantity: number;
   status: ItemStatus;
