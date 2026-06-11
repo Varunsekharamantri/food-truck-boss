@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { Plus, Trash2, ChevronLeft, ChevronRight, Receipt } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, ChevronRight, Receipt, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useExpenses } from "@/hooks/useExpenses";
+import { useAuth } from "@/contexts/AuthContext";
 import { AddExpenseDialog } from "@/components/AddExpenseDialog";
-import { formatDateKey, formatDisplay, parseDateKey, getNextDay, getPrevDay, formatRupee } from "@/lib/dateUtils";
+import { formatDateKey, formatDisplay, getNextDay, getPrevDay, formatRupee } from "@/lib/dateUtils";
 
 export default function ExpensesPage() {
   const { addExpense, deleteExpense, getForDate } = useExpenses();
