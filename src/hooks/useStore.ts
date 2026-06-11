@@ -278,7 +278,7 @@ export function useStore() {
 
   return {
     menu, addMenuItem, updateMenuItem, deleteMenuItem,
-    orders, getOrdersForDate, createOrder, updateOrderStatus, addItemToOrder, removeItemFromOrder, updateItemStatus, deleteOrder,
+    orders, getOrdersForDate, createOrder, updateOrderStatus, addItemToOrder, removeItemFromOrder, updateItemStatus, toggleItemFlag, deleteOrder,
     inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem,
   };
 }
