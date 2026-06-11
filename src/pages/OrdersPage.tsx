@@ -303,7 +303,7 @@ function OrderCard({
             const base = item.quantity * getItemPrice(item.menuItemId);
             const parcelAdd = item.parcel ? PARCEL_CHARGE * item.quantity : 0;
             return (
-              <div key={item.menuItemId} className="flex items-start justify-between text-sm gap-2">
+              <div key={item.id} className="flex items-start justify-between text-sm gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1 flex-wrap">
                     <span className="truncate">
@@ -319,7 +319,7 @@ function OrderCard({
                   {!delivered && onToggleFlag && (
                     <div className="flex gap-1 mt-1">
                       <button
-                        onClick={() => onToggleFlag(item.menuItemId, "spicy")}
+                        onClick={() => onToggleFlag(item.id, "spicy")}
                         className={cn(
                           "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border transition-colors",
                           item.spicy
@@ -330,7 +330,7 @@ function OrderCard({
                         <Flame className="h-2.5 w-2.5" /> Spicy
                       </button>
                       <button
-                        onClick={() => onToggleFlag(item.menuItemId, "parcel")}
+                        onClick={() => onToggleFlag(item.id, "parcel")}
                         className={cn(
                           "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border transition-colors",
                           item.parcel
@@ -345,7 +345,7 @@ function OrderCard({
                 </div>
                 {!delivered ? (
                   <button
-                    onClick={() => onItemStatusChange(item.menuItemId, getNextItemStatus(item.status))}
+                    onClick={() => onItemStatusChange(item.id, getNextItemStatus(item.status))}
                     className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 transition-colors", ITEM_STATUS_COLORS[item.status])}
                   >
                     {item.status}
