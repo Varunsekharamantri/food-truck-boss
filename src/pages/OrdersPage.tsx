@@ -256,6 +256,7 @@ function OrderCard({
   onAddItems,
   onDelete,
   onItemStatusChange,
+  onToggleFlag,
   delivered,
 }: {
   order: CustomerOrder;
@@ -265,6 +266,7 @@ function OrderCard({
   onAddItems: () => void;
   onDelete: () => void;
   onItemStatusChange: (menuItemId: string, status: ItemStatus) => void;
+  onToggleFlag?: (menuItemId: string, flag: "spicy" | "parcel") => void;
   delivered?: boolean;
 }) {
   const isReady = order.status === "Ready";
@@ -294,28 +296,66 @@ function OrderCard({
       {order.items.length === 0 ? (
         <p className="text-xs text-muted-foreground italic mb-2">No items added yet</p>
       ) : (
-        <div className="mb-2 space-y-1">
-          {order.items.map((item) => (
-            <div key={item.menuItemId} className="flex items-center justify-between text-sm gap-1">
-              <div className="flex-1 min-w-0">
-                <span className="truncate">{getItemName(item.menuItemId)} <span className="text-muted-foreground">×{item.quantity}</span></span>
-                <span className="font-mono text-xs text-muted-foreground ml-1">{formatRupee(item.quantity * getItemPrice(item.menuItemId))}</span>
+        <div className="mb-2 space-y-1.5">
+          {order.items.map((item) => {
+            const base = item.quantity * getItemPrice(item.menuItemId);
+            const parcelAdd = item.parcel ? PARCEL_CHARGE * item.quantity : 0;
+            return (
+              <div key={item.menuItemId} className="flex items-start justify-between text-sm gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <span className="truncate">
+                      {getItemName(item.menuItemId)} <span className="text-muted-foreground">×{item.quantity}</span>
+                    </span>
+                    {item.spicy && <Flame className="h-3 w-3 text-red-500" />}
+                    {item.parcel && <Package className="h-3 w-3 text-blue-400" />}
+                  </div>
+                  <div className="font-mono text-xs text-muted-foreground">
+                    {formatRupee(base + parcelAdd)}
+                    {item.parcel && <span className="ml-1 text-blue-400">(+{formatRupee(parcelAdd)} parcel)</span>}
+                  </div>
+                  {!delivered && onToggleFlag && (
+                    <div className="flex gap-1 mt-1">
+                      <button
+                        onClick={() => onToggleFlag(item.menuItemId, "spicy")}
+                        className={cn(
+                          "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border transition-colors",
+                          item.spicy
+                            ? "bg-red-500/20 text-red-400 border-red-500/50"
+                            : "bg-muted/30 text-muted-foreground border-transparent"
+                        )}
+                      >
+                        <Flame className="h-2.5 w-2.5" /> Spicy
+                      </button>
+                      <button
+                        onClick={() => onToggleFlag(item.menuItemId, "parcel")}
+                        className={cn(
+                          "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border transition-colors",
+                          item.parcel
+                            ? "bg-blue-500/20 text-blue-400 border-blue-500/50"
+                            : "bg-muted/30 text-muted-foreground border-transparent"
+                        )}
+                      >
+                        <Package className="h-2.5 w-2.5" /> Parcel +₹{PARCEL_CHARGE}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {!delivered ? (
+                  <button
+                    onClick={() => onItemStatusChange(item.menuItemId, getNextItemStatus(item.status))}
+                    className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 transition-colors", ITEM_STATUS_COLORS[item.status])}
+                  >
+                    {item.status}
+                  </button>
+                ) : (
+                  <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0", ITEM_STATUS_COLORS[item.status])}>
+                    {item.status}
+                  </span>
+                )}
               </div>
-              {!delivered && (
-                <button
-                  onClick={() => onItemStatusChange(item.menuItemId, getNextItemStatus(item.status))}
-                  className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 transition-colors", ITEM_STATUS_COLORS[item.status])}
-                >
-                  {item.status}
-                </button>
-              )}
-              {delivered && (
-                <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0", ITEM_STATUS_COLORS[item.status])}>
-                  {item.status}
-                </span>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
