@@ -36,6 +36,14 @@ export default function ExpensesPage() {
 
   return (
     <div className="py-3">
+      {/* Header with sign out */}
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="font-display text-lg font-bold">Expenses</h2>
+        <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={signOut}>
+          <LogOut className="h-3.5 w-3.5" /> Sign out
+        </Button>
+      </div>
+
       {/* Date strip */}
       <div className="mb-3 flex items-center justify-between rounded-lg border bg-card p-2">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDate(getPrevDay(date))}>
