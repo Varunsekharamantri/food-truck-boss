@@ -55,23 +55,24 @@ export default function OrdersPage() {
   const orderTotal = (order: CustomerOrder) =>
     order.items.reduce((sum, i) => sum + itemLineTotal(i), 0);
 
-  // To-Do (Waiting items aggregated)
-  const todoMap: Record<string, { qty: number; earliest: string; orderNumbers: number[] }> = {};
+  // To-Do (Waiting items aggregated; spicy is its own bucket since cooking differs)
+  const todoMap: Record<string, { menuItemId: string; spicy: boolean; qty: number; earliest: string; orderNumbers: number[] }> = {};
   dayOrders.forEach((order) => {
     order.items.forEach((i) => {
       if (i.status !== "Waiting") return;
-      const existing = todoMap[i.menuItemId];
+      const key = `${i.menuItemId}|${i.spicy ? "1" : "0"}`;
+      const existing = todoMap[key];
       if (existing) {
         existing.qty += i.quantity;
         if (order.timestamp < existing.earliest) existing.earliest = order.timestamp;
         if (!existing.orderNumbers.includes(order.orderNumber)) existing.orderNumbers.push(order.orderNumber);
       } else {
-        todoMap[i.menuItemId] = { qty: i.quantity, earliest: order.timestamp, orderNumbers: [order.orderNumber] };
+        todoMap[key] = { menuItemId: i.menuItemId, spicy: !!i.spicy, qty: i.quantity, earliest: order.timestamp, orderNumbers: [order.orderNumber] };
       }
     });
   });
   const todoList = Object.entries(todoMap)
-    .map(([menuItemId, v]) => ({ menuItemId, ...v }))
+    .map(([key, v]) => ({ key, ...v }))
     .sort((a, b) => a.earliest.localeCompare(b.earliest));
 
   // Analytics
@@ -139,16 +140,17 @@ export default function OrdersPage() {
           <div className="flex flex-col gap-1.5">
             {todoList.map((t, idx) => (
               <div
-                key={t.menuItemId}
+                key={t.key}
                 className={cn(
                   "flex items-center justify-between rounded-md px-2 py-1.5",
                   idx === 0 ? "bg-orange-500/20 ring-1 ring-orange-500/50" : "bg-muted/40"
                 )}
               >
                 <div className="flex-1 min-w-0">
-                  <p className={cn("text-sm font-medium truncate", idx === 0 && "text-orange-300 font-bold")}>
-                    {getItemName(t.menuItemId)}
-                    {idx === 0 && <span className="ml-2 text-[9px] uppercase tracking-wider">Do first</span>}
+                  <p className={cn("text-sm font-medium truncate flex items-center gap-1", idx === 0 && "text-orange-300 font-bold")}>
+                    <span className="truncate">{getItemName(t.menuItemId)}</span>
+                    {t.spicy && <Flame className="h-3 w-3 text-red-500 shrink-0" />}
+                    {idx === 0 && <span className="ml-1 text-[9px] uppercase tracking-wider">Do first</span>}
                   </p>
                   <p className="text-[10px] text-muted-foreground font-mono">
                     #{t.orderNumbers.join(", #")} · {format(new Date(t.earliest), "HH:mm")}
@@ -174,8 +176,8 @@ export default function OrdersPage() {
               orderTotal={orderTotal(order)}
               onAddItems={() => setAddingToOrder(order.id)}
               onDelete={() => deleteOrder(order.id)}
-              onItemStatusChange={(menuItemId, status) => updateItemStatus(order.id, menuItemId, status)}
-              onToggleFlag={(menuItemId, flag) => toggleItemFlag(order.id, menuItemId, flag)}
+              onItemStatusChange={(lineId, status) => updateItemStatus(order.id, lineId, status)}
+              onToggleFlag={(lineId, flag) => toggleItemFlag(order.id, lineId, flag)}
             />
           ))}
         </div>
@@ -265,8 +267,8 @@ function OrderCard({
   orderTotal: number;
   onAddItems: () => void;
   onDelete: () => void;
-  onItemStatusChange: (menuItemId: string, status: ItemStatus) => void;
-  onToggleFlag?: (menuItemId: string, flag: "spicy" | "parcel") => void;
+  onItemStatusChange: (lineId: string, status: ItemStatus) => void;
+  onToggleFlag?: (lineId: string, flag: "spicy" | "parcel") => void;
   delivered?: boolean;
 }) {
   const isReady = order.status === "Ready";
@@ -301,7 +303,7 @@ function OrderCard({
             const base = item.quantity * getItemPrice(item.menuItemId);
             const parcelAdd = item.parcel ? PARCEL_CHARGE * item.quantity : 0;
             return (
-              <div key={item.menuItemId} className="flex items-start justify-between text-sm gap-2">
+              <div key={item.id} className="flex items-start justify-between text-sm gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1 flex-wrap">
                     <span className="truncate">
@@ -317,7 +319,7 @@ function OrderCard({
                   {!delivered && onToggleFlag && (
                     <div className="flex gap-1 mt-1">
                       <button
-                        onClick={() => onToggleFlag(item.menuItemId, "spicy")}
+                        onClick={() => onToggleFlag(item.id, "spicy")}
                         className={cn(
                           "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border transition-colors",
                           item.spicy
@@ -328,7 +330,7 @@ function OrderCard({
                         <Flame className="h-2.5 w-2.5" /> Spicy
                       </button>
                       <button
-                        onClick={() => onToggleFlag(item.menuItemId, "parcel")}
+                        onClick={() => onToggleFlag(item.id, "parcel")}
                         className={cn(
                           "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border transition-colors",
                           item.parcel
@@ -343,7 +345,7 @@ function OrderCard({
                 </div>
                 {!delivered ? (
                   <button
-                    onClick={() => onItemStatusChange(item.menuItemId, getNextItemStatus(item.status))}
+                    onClick={() => onItemStatusChange(item.id, getNextItemStatus(item.status))}
                     className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 transition-colors", ITEM_STATUS_COLORS[item.status])}
                   >
                     {item.status}
@@ -389,7 +391,8 @@ function AddItemsDialog({
   onRemove: (orderId: string, menuItemId: string) => void;
 }) {
   if (!orderId) return null;
-  const getQty = (menuItemId: string) => order?.items.find((i) => i.menuItemId === menuItemId)?.quantity || 0;
+  const getQty = (menuItemId: string) =>
+    order?.items.filter((i) => i.menuItemId === menuItemId).reduce((s, i) => s + i.quantity, 0) || 0;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
