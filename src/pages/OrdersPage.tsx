@@ -33,7 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function OrdersPage() {
-  const { menu, getOrdersForDate, createOrder, addItemToOrder, removeItemFromOrder, updateItemStatus, deleteOrder } = useStore();
+  const { menu, getOrdersForDate, createOrder, addItemToOrder, removeItemFromOrder, updateItemStatus, toggleItemFlag, deleteOrder } = useStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [addingToOrder, setAddingToOrder] = useState<string | null>(null);
   const dateKey = formatDateKey(selectedDate);
@@ -49,8 +49,11 @@ export default function OrdersPage() {
   const getItemPrice = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.price || 0;
   const getItemName = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.name || "Unknown";
 
+  const itemLineTotal = (i: OrderItemEntry) =>
+    i.quantity * getItemPrice(i.menuItemId) + (i.parcel ? PARCEL_CHARGE * i.quantity : 0);
+
   const orderTotal = (order: CustomerOrder) =>
-    order.items.reduce((sum, i) => sum + i.quantity * getItemPrice(i.menuItemId), 0);
+    order.items.reduce((sum, i) => sum + itemLineTotal(i), 0);
 
   // To-Do (Waiting items aggregated)
   const todoMap: Record<string, { qty: number; earliest: string; orderNumbers: number[] }> = {};
