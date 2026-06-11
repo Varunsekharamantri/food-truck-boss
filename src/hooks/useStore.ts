@@ -233,6 +233,16 @@ export function useStore() {
     );
   }, []);
 
+  const toggleItemFlag = useCallback((orderId: string, menuItemId: string, flag: "spicy" | "parcel") => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o;
+        const newItems = o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, [flag]: !i[flag] } : i));
+        return { ...o, items: newItems };
+      })
+    );
+  }, []);
+
   const deleteOrder = useCallback((orderId: string) => {
     setOrders((prev) => {
       const filtered = prev.filter((o) => o.id !== orderId);
