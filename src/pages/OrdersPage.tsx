@@ -267,8 +267,8 @@ function OrderCard({
   orderTotal: number;
   onAddItems: () => void;
   onDelete: () => void;
-  onItemStatusChange: (menuItemId: string, status: ItemStatus) => void;
-  onToggleFlag?: (menuItemId: string, flag: "spicy" | "parcel") => void;
+  onItemStatusChange: (lineId: string, status: ItemStatus) => void;
+  onToggleFlag?: (lineId: string, flag: "spicy" | "parcel") => void;
   delivered?: boolean;
 }) {
   const isReady = order.status === "Ready";
