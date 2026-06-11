@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
-// Types
+// Types (unchanged public surface)
 export interface MenuItem {
   id: string;
   name: string;
@@ -43,97 +45,8 @@ export interface InventoryItem {
   updatedAt: string;
 }
 
-const STORAGE_KEYS = {
-  menu: "truckpos_menu_v5",
-  orders: "truckpos_orders_v3",
-  inventory: "truckpos_inventory",
-  orderCounter: "truckpos_order_counter",
-};
-
-function load<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function save(key: string, data: unknown) {
-  localStorage.setItem(key, JSON.stringify(data));
-}
-
-function genId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
-
-function nowISO() {
-  return new Date().toISOString();
-}
-
-// Default menu items
-const DEFAULT_MENU: MenuItem[] = [
-  // Non-Veg Starters
-  { id: genId(), name: "Chicken 65", bucket: "Starters", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Chicken Lollypop", bucket: "Starters", price: 149, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Honey Chicken", bucket: "Starters", price: 149, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Lemon Chicken", bucket: "Starters", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Dragon Chicken", bucket: "Starters", price: 159, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Pepper Chicken", bucket: "Starters", price: 149, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Garlic Chicken", bucket: "Starters", price: 149, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Chicken Manchurian", bucket: "Starters", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Chilli Chicken", bucket: "Starters", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Egg Manchurian", bucket: "Starters", price: 99, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Egg Chilli", bucket: "Starters", price: 99, createdAt: nowISO(), updatedAt: nowISO() },
-  // Veg Starters
-  { id: genId(), name: "Gobi 65", bucket: "Starters", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Gobi Manchurian", bucket: "Starters", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Gobi Chilli", bucket: "Starters", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Paneer 65", bucket: "Starters", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Paneer Salt Pepper", bucket: "Starters", price: 149, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Paneer Manchurian", bucket: "Starters", price: 159, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Paneer Chilli", bucket: "Starters", price: 159, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Mushroom 65", bucket: "Starters", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Mushroom Salt Pepper", bucket: "Starters", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Mushroom Manchurian", bucket: "Starters", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Mushroom Chilli", bucket: "Starters", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
-  // Rice
-  { id: genId(), name: "Chicken Rice", bucket: "Rice / Noodles", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Egg Rice", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Veg Rice", bucket: "Rice / Noodles", price: 99, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Paneer Rice", bucket: "Rice / Noodles", price: 119, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Mushroom Rice", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Gobi Rice", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
-  // Noodles
-  { id: genId(), name: "Chicken Noodles", bucket: "Rice / Noodles", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Egg Noodles", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Veg Noodles", bucket: "Rice / Noodles", price: 99, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Paneer Noodles", bucket: "Rice / Noodles", price: 119, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Mushroom Noodles", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Gobi Noodles", bucket: "Rice / Noodles", price: 109, createdAt: nowISO(), updatedAt: nowISO() },
-  // Shawarma (Roll / Plate split into separate items)
-  { id: genId(), name: "Shawarma Bun", bucket: "Shawarma", price: 59, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Regular Shawarma Roll", bucket: "Shawarma", price: 79, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Regular Shawarma Plate", bucket: "Shawarma", price: 129, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Mexican Shawarma Roll", bucket: "Shawarma", price: 89, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Mexican Shawarma Plate", bucket: "Shawarma", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Peri Peri Shawarma Roll", bucket: "Shawarma", price: 89, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Peri Peri Shawarma Plate", bucket: "Shawarma", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Schezwan Shawarma Roll", bucket: "Shawarma", price: 89, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Schezwan Shawarma Plate", bucket: "Shawarma", price: 139, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Full Meat Shawarma Roll", bucket: "Shawarma", price: 119, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Full Meat Shawarma Plate", bucket: "Shawarma", price: 169, createdAt: nowISO(), updatedAt: nowISO() },
-  // BBQ
-  { id: genId(), name: "Chicken BBQ", bucket: "BBQ", price: 159, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Chicken Alfaham BBQ", bucket: "BBQ", price: 159, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Chicken Pepper BBQ", bucket: "BBQ", price: 169, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Paneer BBQ", bucket: "BBQ", price: 149, createdAt: nowISO(), updatedAt: nowISO() },
-  // Add-ons (kept at ₹10 each as per request)
-  { id: genId(), name: "Schezwan Add-on", bucket: "Add-ons", price: 10, createdAt: nowISO(), updatedAt: nowISO() },
-  { id: genId(), name: "Parcel", bucket: "Add-ons", price: 10, createdAt: nowISO(), updatedAt: nowISO() },
-];
-
-const ORDER_STATUSES: OrderStatus[] = ["Waiting", "Preparing", "Ready", "Delivered"];
+export const BUCKETS = ["Rice / Noodles", "Starters", "Shawarma", "BBQ", "Add-ons"] as const;
+export type Bucket = (typeof BUCKETS)[number];
 
 const ITEM_STATUSES: ItemStatus[] = ["Waiting", "Preparing", "Ready", "Delivered"];
 
@@ -150,195 +63,270 @@ export function computeOrderStatus(items: OrderItemEntry[]): OrderStatus {
   return "Waiting";
 }
 
-// Hook
+function nowISO() {
+  return new Date().toISOString();
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+// Default menu (seeded once if table is empty)
+const DEFAULT_MENU: Omit<MenuItem, "id" | "createdAt" | "updatedAt">[] = [
+  { name: "Chicken 65", bucket: "Starters", price: 129 },
+  { name: "Chicken Lollypop", bucket: "Starters", price: 149 },
+  { name: "Honey Chicken", bucket: "Starters", price: 149 },
+  { name: "Lemon Chicken", bucket: "Starters", price: 139 },
+  { name: "Dragon Chicken", bucket: "Starters", price: 159 },
+  { name: "Pepper Chicken", bucket: "Starters", price: 149 },
+  { name: "Garlic Chicken", bucket: "Starters", price: 149 },
+  { name: "Chicken Manchurian", bucket: "Starters", price: 139 },
+  { name: "Chilli Chicken", bucket: "Starters", price: 129 },
+  { name: "Egg Manchurian", bucket: "Starters", price: 99 },
+  { name: "Egg Chilli", bucket: "Starters", price: 99 },
+  { name: "Gobi 65", bucket: "Starters", price: 109 },
+  { name: "Gobi Manchurian", bucket: "Starters", price: 129 },
+  { name: "Gobi Chilli", bucket: "Starters", price: 139 },
+  { name: "Paneer 65", bucket: "Starters", price: 139 },
+  { name: "Paneer Salt Pepper", bucket: "Starters", price: 149 },
+  { name: "Paneer Manchurian", bucket: "Starters", price: 159 },
+  { name: "Paneer Chilli", bucket: "Starters", price: 159 },
+  { name: "Mushroom 65", bucket: "Starters", price: 109 },
+  { name: "Mushroom Salt Pepper", bucket: "Starters", price: 139 },
+  { name: "Mushroom Manchurian", bucket: "Starters", price: 129 },
+  { name: "Mushroom Chilli", bucket: "Starters", price: 129 },
+  { name: "Chicken Rice", bucket: "Rice / Noodles", price: 129 },
+  { name: "Egg Rice", bucket: "Rice / Noodles", price: 109 },
+  { name: "Veg Rice", bucket: "Rice / Noodles", price: 99 },
+  { name: "Paneer Rice", bucket: "Rice / Noodles", price: 119 },
+  { name: "Mushroom Rice", bucket: "Rice / Noodles", price: 109 },
+  { name: "Gobi Rice", bucket: "Rice / Noodles", price: 109 },
+  { name: "Chicken Noodles", bucket: "Rice / Noodles", price: 129 },
+  { name: "Egg Noodles", bucket: "Rice / Noodles", price: 109 },
+  { name: "Veg Noodles", bucket: "Rice / Noodles", price: 99 },
+  { name: "Paneer Noodles", bucket: "Rice / Noodles", price: 119 },
+  { name: "Mushroom Noodles", bucket: "Rice / Noodles", price: 109 },
+  { name: "Gobi Noodles", bucket: "Rice / Noodles", price: 109 },
+  { name: "Shawarma Bun", bucket: "Shawarma", price: 59 },
+  { name: "Regular Shawarma Roll", bucket: "Shawarma", price: 79 },
+  { name: "Regular Shawarma Plate", bucket: "Shawarma", price: 129 },
+  { name: "Mexican Shawarma Roll", bucket: "Shawarma", price: 89 },
+  { name: "Mexican Shawarma Plate", bucket: "Shawarma", price: 139 },
+  { name: "Peri Peri Shawarma Roll", bucket: "Shawarma", price: 89 },
+  { name: "Peri Peri Shawarma Plate", bucket: "Shawarma", price: 139 },
+  { name: "Schezwan Shawarma Roll", bucket: "Shawarma", price: 89 },
+  { name: "Schezwan Shawarma Plate", bucket: "Shawarma", price: 139 },
+  { name: "Full Meat Shawarma Roll", bucket: "Shawarma", price: 119 },
+  { name: "Full Meat Shawarma Plate", bucket: "Shawarma", price: 169 },
+  { name: "Chicken BBQ", bucket: "BBQ", price: 159 },
+  { name: "Chicken Alfaham BBQ", bucket: "BBQ", price: 159 },
+  { name: "Chicken Pepper BBQ", bucket: "BBQ", price: 169 },
+  { name: "Paneer BBQ", bucket: "BBQ", price: 149 },
+  { name: "Schezwan Add-on", bucket: "Add-ons", price: 10 },
+  { name: "Parcel", bucket: "Add-ons", price: 10 },
+];
+
+interface MenuRow { id: string; name: string; bucket: string; price: number | string; created_at: string; updated_at: string }
+interface InvRow { id: string; name: string; quantity: number | string; unit: string; cost_per_unit: number | string; updated_at: string }
+interface OrderRow { id: string; order_number: number; date_key: string; ts: string; status: string; items: OrderItemEntry[] }
+
+const menuFromRow = (r: MenuRow): MenuItem => ({
+  id: r.id, name: r.name, bucket: r.bucket as Bucket, price: Number(r.price),
+  createdAt: r.created_at, updatedAt: r.updated_at,
+});
+const invFromRow = (r: InvRow): InventoryItem => ({
+  id: r.id, name: r.name, quantity: Number(r.quantity), unit: r.unit,
+  costPerUnit: Number(r.cost_per_unit), updatedAt: r.updated_at,
+});
+const orderFromRow = (r: OrderRow): CustomerOrder => ({
+  id: r.id, orderNumber: r.order_number, dateKey: r.date_key, timestamp: r.ts,
+  status: r.status as OrderStatus, items: Array.isArray(r.items) ? r.items : [],
+});
+
 export function useStore() {
-  const [menu, setMenu] = useState<MenuItem[]>(() => load(STORAGE_KEYS.menu, DEFAULT_MENU));
-  const [orders, setOrders] = useState<CustomerOrder[]>(() => load(STORAGE_KEYS.orders, []));
-  const [inventory, setInventory] = useState<InventoryItem[]>(() => load(STORAGE_KEYS.inventory, []));
-  const [orderCounter, setOrderCounter] = useState<number>(() => load(STORAGE_KEYS.orderCounter, 0));
+  const [menu, setMenu] = useState<MenuItem[]>([]);
+  const [orders, setOrders] = useState<CustomerOrder[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const seededRef = useRef(false);
 
-  useEffect(() => save(STORAGE_KEYS.menu, menu), [menu]);
-  useEffect(() => save(STORAGE_KEYS.orders, orders), [orders]);
-  useEffect(() => save(STORAGE_KEYS.inventory, inventory), [inventory]);
-  useEffect(() => save(STORAGE_KEYS.orderCounter, orderCounter), [orderCounter]);
-
-  // Menu
-  const addMenuItem = useCallback((item: Omit<MenuItem, "id" | "createdAt" | "updatedAt">) => {
-    setMenu((prev) => [...prev, { ...item, id: genId(), createdAt: nowISO(), updatedAt: nowISO() }]);
+  // Loaders
+  const loadMenu = useCallback(async () => {
+    const { data, error } = await supabase.from("menu_items").select("*").order("created_at", { ascending: true });
+    if (error) return;
+    const rows = (data as MenuRow[]).map(menuFromRow);
+    setMenu(rows);
+    // One-time seed if empty
+    if (!seededRef.current && rows.length === 0) {
+      seededRef.current = true;
+      await supabase.from("menu_items").insert(DEFAULT_MENU);
+      const { data: seeded } = await supabase.from("menu_items").select("*").order("created_at", { ascending: true });
+      if (seeded) setMenu((seeded as MenuRow[]).map(menuFromRow));
+    }
   }, []);
 
-  const updateMenuItem = useCallback((id: string, updates: Partial<Pick<MenuItem, "name" | "bucket" | "price">>) => {
-    setMenu((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates, updatedAt: nowISO() } : m)));
+  const loadOrders = useCallback(async () => {
+    const { data, error } = await supabase.from("orders").select("*").order("ts", { ascending: true });
+    if (error) return;
+    setOrders((data as OrderRow[]).map(orderFromRow));
   }, []);
 
-  const deleteMenuItem = useCallback((id: string) => {
-    setMenu((prev) => prev.filter((m) => m.id !== id));
+  const loadInventory = useCallback(async () => {
+    const { data, error } = await supabase.from("inventory").select("*").order("created_at", { ascending: true });
+    if (error) return;
+    setInventory((data as InvRow[]).map(invFromRow));
   }, []);
 
-  // Customer Orders
+  useEffect(() => {
+    loadMenu();
+    loadOrders();
+    loadInventory();
+
+    const ch = supabase
+      .channel("store-stream")
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items" }, () => loadMenu())
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => loadOrders())
+      .on("postgres_changes", { event: "*", schema: "public", table: "inventory" }, () => loadInventory())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [loadMenu, loadOrders, loadInventory]);
+
+  // MENU mutations
+  const addMenuItem = useCallback(async (item: Omit<MenuItem, "id" | "createdAt" | "updatedAt">) => {
+    const { error } = await supabase.from("menu_items").insert({ name: item.name, bucket: item.bucket, price: item.price });
+    if (error) toast({ title: "Save failed", description: error.message, variant: "destructive" });
+  }, []);
+
+  const updateMenuItem = useCallback(async (id: string, updates: Partial<Pick<MenuItem, "name" | "bucket" | "price">>) => {
+    const { error } = await supabase.from("menu_items").update(updates).eq("id", id);
+    if (error) toast({ title: "Update failed", description: error.message, variant: "destructive" });
+  }, []);
+
+  const deleteMenuItem = useCallback(async (id: string) => {
+    const { error } = await supabase.from("menu_items").delete().eq("id", id);
+    if (error) toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+  }, []);
+
+  // ORDERS
   const getOrdersForDate = useCallback((dateKey: string) => orders.filter((o) => o.dateKey === dateKey), [orders]);
 
-  const createOrder = useCallback((dateKey: string): CustomerOrder => {
-    const newNum = orderCounter + 1;
-    setOrderCounter(newNum);
-    const order: CustomerOrder = {
-      id: genId(),
-      orderNumber: newNum,
-      dateKey,
-      timestamp: nowISO(),
-      status: "Waiting",
-      items: [],
-    };
-    setOrders((prev) => [...prev, order]);
-    return order;
-  }, [orderCounter]);
+  const createOrder = useCallback(async (dateKey: string) => {
+    const dayOrders = orders.filter((o) => o.dateKey === dateKey);
+    const nextNum = dayOrders.reduce((m, o) => Math.max(m, o.orderNumber), 0) + 1;
+    const ts = nowISO();
+    const { data, error } = await supabase
+      .from("orders")
+      .insert({ order_number: nextNum, date_key: dateKey, ts, status: "Waiting", items: [] })
+      .select()
+      .single();
+    if (error) {
+      toast({ title: "Couldn't create order", description: error.message, variant: "destructive" });
+      return null;
+    }
+    return orderFromRow(data as OrderRow);
+  }, [orders]);
 
-  const updateOrderStatus = useCallback((orderId: string, status: OrderStatus) => {
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+  const updateOrderStatus = useCallback(async (orderId: string, status: OrderStatus) => {
+    await supabase.from("orders").update({ status }).eq("id", orderId);
   }, []);
 
-  // Variants of the same menu item with different spicy/parcel flags live on separate lines.
-  const addItemToOrder = useCallback((orderId: string, menuItemId: string) => {
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id !== orderId) return o;
-        // Merge into an existing "plain" (no spicy, no parcel) line for this menu item.
-        const plain = o.items.find(
-          (i) => i.menuItemId === menuItemId && !i.spicy && !i.parcel
-        );
-        const newItems = plain
-          ? o.items.map((i) => (i.id === plain.id ? { ...i, quantity: i.quantity + 1 } : i))
-          : [
-              ...o.items,
-              { id: genId(), menuItemId, quantity: 1, status: "Waiting" as ItemStatus },
-            ];
-        return { ...o, items: newItems, status: computeOrderStatus(newItems) };
-      })
+  const persistOrderItems = async (orderId: string, items: OrderItemEntry[]) => {
+    const status = computeOrderStatus(items);
+    await supabase.from("orders").update({ items, status }).eq("id", orderId);
+  };
+
+  const addItemToOrder = useCallback(async (orderId: string, menuItemId: string) => {
+    const o = orders.find((x) => x.id === orderId);
+    if (!o) return;
+    const plain = o.items.find((i) => i.menuItemId === menuItemId && !i.spicy && !i.parcel);
+    const newItems = plain
+      ? o.items.map((i) => (i.id === plain.id ? { ...i, quantity: i.quantity + 1 } : i))
+      : [...o.items, { id: genId(), menuItemId, quantity: 1, status: "Waiting" as ItemStatus }];
+    setOrders((prev) => prev.map((x) => x.id === orderId ? { ...x, items: newItems, status: computeOrderStatus(newItems) } : x));
+    await persistOrderItems(orderId, newItems);
+  }, [orders]);
+
+  const removeItemFromOrder = useCallback(async (orderId: string, menuItemId: string) => {
+    const o = orders.find((x) => x.id === orderId);
+    if (!o) return;
+    const target = o.items.find((i) => i.menuItemId === menuItemId && !i.spicy && !i.parcel)
+      || o.items.find((i) => i.menuItemId === menuItemId);
+    if (!target) return;
+    const newItems = target.quantity <= 1
+      ? o.items.filter((i) => i.id !== target.id)
+      : o.items.map((i) => (i.id === target.id ? { ...i, quantity: i.quantity - 1 } : i));
+    setOrders((prev) => prev.map((x) => x.id === orderId ? { ...x, items: newItems, status: computeOrderStatus(newItems) } : x));
+    await persistOrderItems(orderId, newItems);
+  }, [orders]);
+
+  const updateItemStatus = useCallback(async (orderId: string, lineId: string, status: ItemStatus) => {
+    const o = orders.find((x) => x.id === orderId);
+    if (!o) return;
+    const newItems = o.items.map((i) => (i.id === lineId ? { ...i, status } : i));
+    setOrders((prev) => prev.map((x) => x.id === orderId ? { ...x, items: newItems, status: computeOrderStatus(newItems) } : x));
+    await persistOrderItems(orderId, newItems);
+  }, [orders]);
+
+  const toggleItemFlag = useCallback(async (orderId: string, lineId: string, flag: "spicy" | "parcel") => {
+    const o = orders.find((x) => x.id === orderId);
+    if (!o) return;
+    const line = o.items.find((i) => i.id === lineId);
+    if (!line) return;
+    const nextSpicy = flag === "spicy" ? !line.spicy : !!line.spicy;
+    const nextParcel = flag === "parcel" ? !line.parcel : !!line.parcel;
+    let newItems: OrderItemEntry[];
+    if (line.quantity <= 1) {
+      const mergeTarget = o.items.find((i) => i.id !== line.id && i.menuItemId === line.menuItemId && !!i.spicy === nextSpicy && !!i.parcel === nextParcel && i.status === line.status);
+      newItems = mergeTarget
+        ? o.items.filter((i) => i.id !== line.id).map((i) => (i.id === mergeTarget.id ? { ...i, quantity: i.quantity + 1 } : i))
+        : o.items.map((i) => (i.id === line.id ? { ...i, spicy: nextSpicy, parcel: nextParcel } : i));
+    } else {
+      const decremented = o.items.map((i) => (i.id === line.id ? { ...i, quantity: i.quantity - 1 } : i));
+      const mergeTarget = decremented.find((i) => i.menuItemId === line.menuItemId && !!i.spicy === nextSpicy && !!i.parcel === nextParcel && i.status === line.status && i.id !== line.id);
+      newItems = mergeTarget
+        ? decremented.map((i) => (i.id === mergeTarget.id ? { ...i, quantity: i.quantity + 1 } : i))
+        : [...decremented, { id: genId(), menuItemId: line.menuItemId, quantity: 1, status: line.status, spicy: nextSpicy, parcel: nextParcel }];
+    }
+    setOrders((prev) => prev.map((x) => x.id === orderId ? { ...x, items: newItems, status: computeOrderStatus(newItems) } : x));
+    await persistOrderItems(orderId, newItems);
+  }, [orders]);
+
+  const deleteOrder = useCallback(async (orderId: string) => {
+    const o = orders.find((x) => x.id === orderId);
+    if (!o) return;
+    await supabase.from("orders").delete().eq("id", orderId);
+    // Renumber remaining orders for that date by timestamp
+    const remaining = orders.filter((x) => x.dateKey === o.dateKey && x.id !== orderId)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    await Promise.all(
+      remaining.map((ord, idx) =>
+        ord.orderNumber !== idx + 1
+          ? supabase.from("orders").update({ order_number: idx + 1 }).eq("id", ord.id)
+          : Promise.resolve()
+      )
     );
-  }, []);
+  }, [orders]);
 
-  const removeItemFromOrder = useCallback((orderId: string, menuItemId: string) => {
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id !== orderId) return o;
-        // Prefer removing from the plain line first; otherwise from any line with this menu item.
-        const target =
-          o.items.find((i) => i.menuItemId === menuItemId && !i.spicy && !i.parcel) ||
-          o.items.find((i) => i.menuItemId === menuItemId);
-        if (!target) return o;
-        const newItems = target.quantity <= 1
-          ? o.items.filter((i) => i.id !== target.id)
-          : o.items.map((i) => (i.id === target.id ? { ...i, quantity: i.quantity - 1 } : i));
-        return { ...o, items: newItems, status: computeOrderStatus(newItems) };
-      })
-    );
-  }, []);
-
-  const updateItemStatus = useCallback((orderId: string, lineId: string, status: ItemStatus) => {
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id !== orderId) return o;
-        const newItems = o.items.map((i) => (i.id === lineId ? { ...i, status } : i));
-        return { ...o, items: newItems, status: computeOrderStatus(newItems) };
-      })
-    );
-  }, []);
-
-  // Toggling a flag on a line with quantity > 1 splits one unit off into its own variant line
-  // (merging with a matching variant if one already exists). This keeps mixed-variant orders
-  // accurate, e.g. 2× Chicken Rice where only one is parcel.
-  const toggleItemFlag = useCallback((orderId: string, lineId: string, flag: "spicy" | "parcel") => {
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id !== orderId) return o;
-        const line = o.items.find((i) => i.id === lineId);
-        if (!line) return o;
-        const nextSpicy = flag === "spicy" ? !line.spicy : !!line.spicy;
-        const nextParcel = flag === "parcel" ? !line.parcel : !!line.parcel;
-
-        // Whole line toggles when only 1 unit — try to merge with matching variant.
-        if (line.quantity <= 1) {
-          const mergeTarget = o.items.find(
-            (i) =>
-              i.id !== line.id &&
-              i.menuItemId === line.menuItemId &&
-              !!i.spicy === nextSpicy &&
-              !!i.parcel === nextParcel &&
-              i.status === line.status
-          );
-          const newItems = mergeTarget
-            ? o.items
-                .filter((i) => i.id !== line.id)
-                .map((i) => (i.id === mergeTarget.id ? { ...i, quantity: i.quantity + 1 } : i))
-            : o.items.map((i) =>
-                i.id === line.id ? { ...i, spicy: nextSpicy, parcel: nextParcel } : i
-              );
-          return { ...o, items: newItems, status: computeOrderStatus(newItems) };
-        }
-
-        // Split: take 1 unit off this line and apply the toggled flags to it.
-        const decremented = o.items.map((i) =>
-          i.id === line.id ? { ...i, quantity: i.quantity - 1 } : i
-        );
-        const mergeTarget = decremented.find(
-          (i) =>
-            i.menuItemId === line.menuItemId &&
-            !!i.spicy === nextSpicy &&
-            !!i.parcel === nextParcel &&
-            i.status === line.status &&
-            i.id !== line.id
-        );
-        const newItems = mergeTarget
-          ? decremented.map((i) =>
-              i.id === mergeTarget.id ? { ...i, quantity: i.quantity + 1 } : i
-            )
-          : [
-              ...decremented,
-              {
-                id: genId(),
-                menuItemId: line.menuItemId,
-                quantity: 1,
-                status: line.status,
-                spicy: nextSpicy,
-                parcel: nextParcel,
-              },
-            ];
-        return { ...o, items: newItems, status: computeOrderStatus(newItems) };
-      })
-    );
-  }, []);
-
-  const deleteOrder = useCallback((orderId: string) => {
-    setOrders((prev) => {
-      const filtered = prev.filter((o) => o.id !== orderId);
-      // Renumber orders per dateKey
-      const byDate: Record<string, CustomerOrder[]> = {};
-      filtered.forEach((o) => {
-        if (!byDate[o.dateKey]) byDate[o.dateKey] = [];
-        byDate[o.dateKey].push(o);
-      });
-      const renumbered: CustomerOrder[] = [];
-      Object.values(byDate).forEach((dateOrders) => {
-        dateOrders
-          .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-          .forEach((o, idx) => renumbered.push({ ...o, orderNumber: idx + 1 }));
-      });
-      return renumbered;
+  // INVENTORY
+  const addInventoryItem = useCallback(async (item: Omit<InventoryItem, "id" | "updatedAt">) => {
+    const { error } = await supabase.from("inventory").insert({
+      name: item.name, quantity: item.quantity, unit: item.unit, cost_per_unit: item.costPerUnit,
     });
+    if (error) toast({ title: "Save failed", description: error.message, variant: "destructive" });
   }, []);
 
-
-  // Inventory
-  const addInventoryItem = useCallback((item: Omit<InventoryItem, "id" | "updatedAt">) => {
-    setInventory((prev) => [...prev, { ...item, id: genId(), updatedAt: nowISO() }]);
+  const updateInventoryItem = useCallback(async (id: string, updates: Partial<Pick<InventoryItem, "name" | "quantity" | "unit" | "costPerUnit">>) => {
+    const payload: Record<string, unknown> = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.quantity !== undefined) payload.quantity = updates.quantity;
+    if (updates.unit !== undefined) payload.unit = updates.unit;
+    if (updates.costPerUnit !== undefined) payload.cost_per_unit = updates.costPerUnit;
+    const { error } = await supabase.from("inventory").update(payload).eq("id", id);
+    if (error) toast({ title: "Update failed", description: error.message, variant: "destructive" });
   }, []);
 
-  const updateInventoryItem = useCallback((id: string, updates: Partial<Pick<InventoryItem, "name" | "quantity" | "unit" | "costPerUnit">>) => {
-    setInventory((prev) => prev.map((i) => (i.id === id ? { ...i, ...updates, updatedAt: nowISO() } : i)));
-  }, []);
-
-  const deleteInventoryItem = useCallback((id: string) => {
-    setInventory((prev) => prev.filter((i) => i.id !== id));
+  const deleteInventoryItem = useCallback(async (id: string) => {
+    const { error } = await supabase.from("inventory").delete().eq("id", id);
+    if (error) toast({ title: "Delete failed", description: error.message, variant: "destructive" });
   }, []);
 
   return {
@@ -347,6 +335,3 @@ export function useStore() {
     inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem,
   };
 }
-
-export const BUCKETS = ["Rice / Noodles", "Starters", "Shawarma", "BBQ", "Add-ons"] as const;
-export type Bucket = (typeof BUCKETS)[number];
