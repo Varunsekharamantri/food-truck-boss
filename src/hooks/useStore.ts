@@ -16,7 +16,11 @@ export interface OrderItemEntry {
   menuItemId: string;
   quantity: number;
   status: ItemStatus;
+  spicy?: boolean;
+  parcel?: boolean;
 }
+
+export const PARCEL_CHARGE = 10;
 
 export type OrderStatus = "Waiting" | "Preparing" | "Ready" | "Delivered";
 
@@ -229,6 +233,16 @@ export function useStore() {
     );
   }, []);
 
+  const toggleItemFlag = useCallback((orderId: string, menuItemId: string, flag: "spicy" | "parcel") => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o;
+        const newItems = o.items.map((i) => (i.menuItemId === menuItemId ? { ...i, [flag]: !i[flag] } : i));
+        return { ...o, items: newItems };
+      })
+    );
+  }, []);
+
   const deleteOrder = useCallback((orderId: string) => {
     setOrders((prev) => {
       const filtered = prev.filter((o) => o.id !== orderId);
@@ -264,7 +278,7 @@ export function useStore() {
 
   return {
     menu, addMenuItem, updateMenuItem, deleteMenuItem,
-    orders, getOrdersForDate, createOrder, updateOrderStatus, addItemToOrder, removeItemFromOrder, updateItemStatus, deleteOrder,
+    orders, getOrdersForDate, createOrder, updateOrderStatus, addItemToOrder, removeItemFromOrder, updateItemStatus, toggleItemFlag, deleteOrder,
     inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem,
   };
 }
