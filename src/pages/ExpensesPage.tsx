@@ -1,14 +1,12 @@
 import { useMemo, useState } from "react";
-import { Plus, Trash2, ChevronLeft, ChevronRight, Receipt, LogIn, LogOut } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, ChevronRight, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useExpenses } from "@/hooks/useExpenses";
-import { useAuth } from "@/contexts/AuthContext";
 import { AddExpenseDialog } from "@/components/AddExpenseDialog";
 import { formatDateKey, formatDisplay, getNextDay, getPrevDay, formatRupee } from "@/lib/dateUtils";
 
 export default function ExpensesPage() {
-  const { user, signInWithGoogle, signOut } = useAuth();
   const { addExpense, deleteExpense, getForDate } = useExpenses();
   const [date, setDate] = useState<Date>(new Date());
   const [open, setOpen] = useState(false);
@@ -20,30 +18,8 @@ export default function ExpensesPage() {
   );
   const total = useMemo(() => dayExpenses.reduce((s, e) => s + e.amount, 0), [dayExpenses]);
 
-  if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-20">
-        <Receipt className="h-12 w-12 text-muted-foreground opacity-50" />
-        <p className="text-center text-sm text-muted-foreground">
-          Sign in to view and manage expenses
-        </p>
-        <Button onClick={signInWithGoogle} className="gap-2">
-          <LogIn className="h-4 w-4" /> Sign in with Google
-        </Button>
-      </div>
-    );
-  }
-
   return (
     <div className="py-3">
-      {/* Header with sign out */}
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-display text-lg font-bold">Expenses</h2>
-        <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={signOut}>
-          <LogOut className="h-3.5 w-3.5" /> Sign out
-        </Button>
-      </div>
-
       {/* Date strip */}
       <div className="mb-3 flex items-center justify-between rounded-lg border bg-card p-2">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDate(getPrevDay(date))}>

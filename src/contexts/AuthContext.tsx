@@ -24,15 +24,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
-
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
+    });
+
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (data.session) {
+        setSession(data.session);
+        setUser(data.session.user);
+      } else {
+        // Auto sign in anonymously so writes work without forcing a login UI
+        const { data: anon, error } = await supabase.auth.signInAnonymously();
+        if (!error && anon.session) {
+          setSession(anon.session);
+          setUser(anon.user);
+        }
+      }
+      setLoading(false);
     });
 
     return () => {
