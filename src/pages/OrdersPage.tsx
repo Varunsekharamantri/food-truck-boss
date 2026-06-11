@@ -80,7 +80,7 @@ export default function OrdersPage() {
   dayOrders.forEach((order) => {
     order.items.forEach((i) => {
       itemTotals[i.menuItemId] = (itemTotals[i.menuItemId] || 0) + i.quantity;
-      totalRevenue += i.quantity * getItemPrice(i.menuItemId);
+      totalRevenue += itemLineTotal(i);
     });
   });
 
