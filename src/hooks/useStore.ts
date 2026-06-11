@@ -16,7 +16,11 @@ export interface OrderItemEntry {
   menuItemId: string;
   quantity: number;
   status: ItemStatus;
+  spicy?: boolean;
+  parcel?: boolean;
 }
+
+export const PARCEL_CHARGE = 10;
 
 export type OrderStatus = "Waiting" | "Preparing" | "Ready" | "Delivered";
 
