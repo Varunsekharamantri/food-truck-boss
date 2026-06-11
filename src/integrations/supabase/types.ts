@@ -14,7 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          date_key: string
+          id: string
+          item: string
+          merchant: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          date_key: string
+          id?: string
+          item: string
+          merchant?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date_key?: string
+          id?: string
+          item?: string
+          merchant?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
