@@ -48,7 +48,9 @@ export function AddExpenseDialog({ open, onOpenChange, defaultDateKey, onSave }:
       if (data.item) setItem(data.item);
       if (typeof data.amount === "number") setAmount(String(data.amount));
       if (data.merchant) setMerchant(data.merchant);
-      if (data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date)) setDateKey(data.date);
+      // Note: we intentionally do NOT overwrite the date from the receipt —
+      // the user already chose which day this expense belongs to. They can
+      // still change it manually if needed.
       toast({ title: "Scanned", description: "Review the details before saving." });
     } catch (e) {
       toast({
