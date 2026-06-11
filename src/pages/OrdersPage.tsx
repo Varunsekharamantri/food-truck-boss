@@ -55,23 +55,24 @@ export default function OrdersPage() {
   const orderTotal = (order: CustomerOrder) =>
     order.items.reduce((sum, i) => sum + itemLineTotal(i), 0);
 
-  // To-Do (Waiting items aggregated)
-  const todoMap: Record<string, { qty: number; earliest: string; orderNumbers: number[] }> = {};
+  // To-Do (Waiting items aggregated; spicy is its own bucket since cooking differs)
+  const todoMap: Record<string, { menuItemId: string; spicy: boolean; qty: number; earliest: string; orderNumbers: number[] }> = {};
   dayOrders.forEach((order) => {
     order.items.forEach((i) => {
       if (i.status !== "Waiting") return;
-      const existing = todoMap[i.menuItemId];
+      const key = `${i.menuItemId}|${i.spicy ? "1" : "0"}`;
+      const existing = todoMap[key];
       if (existing) {
         existing.qty += i.quantity;
         if (order.timestamp < existing.earliest) existing.earliest = order.timestamp;
         if (!existing.orderNumbers.includes(order.orderNumber)) existing.orderNumbers.push(order.orderNumber);
       } else {
-        todoMap[i.menuItemId] = { qty: i.quantity, earliest: order.timestamp, orderNumbers: [order.orderNumber] };
+        todoMap[key] = { menuItemId: i.menuItemId, spicy: !!i.spicy, qty: i.quantity, earliest: order.timestamp, orderNumbers: [order.orderNumber] };
       }
     });
   });
   const todoList = Object.entries(todoMap)
-    .map(([menuItemId, v]) => ({ menuItemId, ...v }))
+    .map(([key, v]) => ({ key, ...v }))
     .sort((a, b) => a.earliest.localeCompare(b.earliest));
 
   // Analytics
