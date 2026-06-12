@@ -50,9 +50,14 @@ export default function OrdersPage() {
   };
 
   const handleCloseAddItems = () => {
+    const targetId = addingToOrder;
     setAddingToOrder(null);
     requestAnimationFrame(() => {
-      document.getElementById("app-main")?.scrollTo({ top: 0, behavior: "smooth" });
+      if (targetId) {
+        document.getElementById(`order-${targetId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        document.getElementById("app-main")?.scrollTo({ top: 0, behavior: "smooth" });
+      }
     });
   };
 
