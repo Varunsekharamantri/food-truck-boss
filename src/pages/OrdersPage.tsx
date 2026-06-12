@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useStore, BUCKETS, type Bucket, type MenuItem, type CustomerOrder, type ItemStatus, type OrderItemEntry, getNextItemStatus, computeOrderStatus, PARCEL_CHARGE } from "@/hooks/useStore";
 import { formatDateKey, formatDisplay, formatRupee } from "@/lib/dateUtils";
-import { Plus, Minus, CalendarIcon, ChevronDown, Trash2, Flame, Package } from "lucide-react";
+import { Plus, Minus, CalendarIcon, ChevronDown, Trash2, Flame, Package, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, isToday } from "date-fns";
@@ -36,6 +36,16 @@ export default function OrdersPage() {
   const { menu, getOrdersForDate, createOrder, addItemToOrder, removeItemFromOrder, updateItemStatus, toggleItemFlag, deleteOrder } = useStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [addingToOrder, setAddingToOrder] = useState<string | null>(null);
+  const [highlightTodo, setHighlightTodo] = useState(false);
+
+  const handleBackToTop = () => {
+    document.getElementById("app-main")?.scrollTo({ top: 0, behavior: "smooth" });
+    const todoEl = document.getElementById("cook-todo");
+    if (todoEl) {
+      setHighlightTodo(true);
+      setTimeout(() => setHighlightTodo(false), 2200);
+    }
+  };
   const dateKey = formatDateKey(selectedDate);
   const dayOrders = getOrdersForDate(dateKey);
 
@@ -147,7 +157,13 @@ export default function OrdersPage() {
 
       {/* To-Do (Waiting items aggregated) */}
       {todoList.length > 0 && (
-        <div className="rounded-lg bg-card p-3 shadow-sm border border-orange-500/30">
+        <div
+          id="cook-todo"
+          className={cn(
+            "rounded-lg bg-card p-3 shadow-sm border border-orange-500/30 transition-all duration-500",
+            highlightTodo && "ring-4 ring-orange-500/70 scale-[1.02] shadow-lg shadow-orange-500/30"
+          )}
+        >
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xs font-bold uppercase text-orange-400 tracking-wider">Cook To-Do</h2>
             <span className="text-[10px] text-muted-foreground">Oldest first</span>
@@ -261,6 +277,18 @@ export default function OrdersPage() {
         onAdd={addItemToOrder}
         onRemove={removeItemFromOrder}
       />
+
+      {/* Floating Back-to-Top → highlights Cook To-Do */}
+      {todoList.length > 0 && (
+        <button
+          onClick={handleBackToTop}
+          aria-label="Back to top and show Cook To-Do"
+          className="fixed bottom-20 right-4 z-40 flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/40 active:scale-95 transition-transform"
+        >
+          <ChevronUp className="h-4 w-4" />
+          Cook To-Do
+        </button>
+      )}
     </div>
   );
 }
