@@ -50,9 +50,14 @@ export default function OrdersPage() {
   };
 
   const handleCloseAddItems = () => {
+    const targetId = addingToOrder;
     setAddingToOrder(null);
     requestAnimationFrame(() => {
-      document.getElementById("app-main")?.scrollTo({ top: 0, behavior: "smooth" });
+      if (targetId) {
+        document.getElementById(`order-${targetId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        document.getElementById("app-main")?.scrollTo({ top: 0, behavior: "smooth" });
+      }
     });
   };
 
@@ -283,7 +288,7 @@ function OrderCard({
 }) {
   const isReady = order.status === "Ready";
   return (
-    <div className={cn(
+    <div id={`order-${order.id}`} className={cn(
       "rounded-lg bg-card p-3 shadow-sm border",
       isReady && "border-accent ring-1 ring-accent/30",
       delivered && "opacity-60"
