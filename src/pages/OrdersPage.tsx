@@ -277,6 +277,25 @@ export default function OrdersPage() {
         onAdd={addItemToOrder}
         onRemove={removeItemFromOrder}
       />
+
+      {/* Floating Back-to-Top → highlights Cook To-Do */}
+      {todoList.length > 0 && (
+        <button
+          onClick={handleBackToTop}
+          aria-label="Back to top and show Cook To-Do"
+          className="fixed bottom-20 right-4 z-40 flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/40 active:scale-95 transition-transform"
+        >
+          <ChevronUp className="h-4 w-4" />
+          Cook To-Do
+        </button>
+      )}
+    </div>
+  );
+}
+        order={dayOrders.find((o) => o.id === addingToOrder)}
+        onAdd={addItemToOrder}
+        onRemove={removeItemFromOrder}
+      />
     </div>
   );
 }
