@@ -39,11 +39,13 @@ export default function OrdersPage() {
   const [highlightTodo, setHighlightTodo] = useState(false);
 
   const handleBackToTop = () => {
-    document.getElementById("app-main")?.scrollTo({ top: 0, behavior: "smooth" });
     const todoEl = document.getElementById("cook-todo");
     if (todoEl) {
+      todoEl.scrollIntoView({ behavior: "smooth", block: "start" });
       setHighlightTodo(true);
       setTimeout(() => setHighlightTodo(false), 2200);
+    } else {
+      document.getElementById("app-main")?.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
   const dateKey = formatDateKey(selectedDate);
