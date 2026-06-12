@@ -292,13 +292,6 @@ export default function OrdersPage() {
     </div>
   );
 }
-        order={dayOrders.find((o) => o.id === addingToOrder)}
-        onAdd={addItemToOrder}
-        onRemove={removeItemFromOrder}
-      />
-    </div>
-  );
-}
 
 function OrderCard({
   order,
