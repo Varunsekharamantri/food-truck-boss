@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useStore, BUCKETS, type Bucket, type MenuItem, type CustomerOrder, type ItemStatus, type OrderItemEntry, getNextItemStatus, computeOrderStatus, PARCEL_CHARGE } from "@/hooks/useStore";
 import { formatDateKey, formatDisplay, formatRupee } from "@/lib/dateUtils";
-import { Plus, Minus, CalendarIcon, ChevronDown, Trash2, Flame, Package } from "lucide-react";
+import { Plus, Minus, CalendarIcon, ChevronDown, Trash2, Flame, Package, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, isToday } from "date-fns";
