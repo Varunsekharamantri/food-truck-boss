@@ -45,7 +45,7 @@ export default function Index() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto px-4">
+      <main id="app-main" className="flex-1 overflow-y-auto px-4">
         {tab === "orders" && <OrdersPage />}
         {tab === "menu" && <MenuSettingsPage />}
         {tab === "inventory" && <InventoryPage />}
