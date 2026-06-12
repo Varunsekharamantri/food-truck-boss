@@ -288,7 +288,7 @@ function OrderCard({
 }) {
   const isReady = order.status === "Ready";
   return (
-    <div className={cn(
+    <div id={`order-${order.id}`} className={cn(
       "rounded-lg bg-card p-3 shadow-sm border",
       isReady && "border-accent ring-1 ring-accent/30",
       delivered && "opacity-60"
