@@ -157,7 +157,13 @@ export default function OrdersPage() {
 
       {/* To-Do (Waiting items aggregated) */}
       {todoList.length > 0 && (
-        <div className="rounded-lg bg-card p-3 shadow-sm border border-orange-500/30">
+        <div
+          id="cook-todo"
+          className={cn(
+            "rounded-lg bg-card p-3 shadow-sm border border-orange-500/30 transition-all duration-500",
+            highlightTodo && "ring-4 ring-orange-500/70 scale-[1.02] shadow-lg shadow-orange-500/30"
+          )}
+        >
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xs font-bold uppercase text-orange-400 tracking-wider">Cook To-Do</h2>
             <span className="text-[10px] text-muted-foreground">Oldest first</span>
