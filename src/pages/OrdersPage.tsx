@@ -36,6 +36,16 @@ export default function OrdersPage() {
   const { menu, getOrdersForDate, createOrder, addItemToOrder, removeItemFromOrder, updateItemStatus, toggleItemFlag, deleteOrder } = useStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [addingToOrder, setAddingToOrder] = useState<string | null>(null);
+  const [highlightTodo, setHighlightTodo] = useState(false);
+
+  const handleBackToTop = () => {
+    document.getElementById("app-main")?.scrollTo({ top: 0, behavior: "smooth" });
+    const todoEl = document.getElementById("cook-todo");
+    if (todoEl) {
+      setHighlightTodo(true);
+      setTimeout(() => setHighlightTodo(false), 2200);
+    }
+  };
   const dateKey = formatDateKey(selectedDate);
   const dayOrders = getOrdersForDate(dateKey);
 
