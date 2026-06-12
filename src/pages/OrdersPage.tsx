@@ -44,7 +44,17 @@ export default function OrdersPage() {
   const readyCount = dayOrders.filter((o) => o.status === "Ready").length;
   const deliveredCount = dayOrders.filter((o) => o.status === "Delivered").length;
 
-  const handleNewOrder = () => createOrder(dateKey);
+  const handleNewOrder = async () => {
+    const created = await createOrder(dateKey);
+    if (created) setAddingToOrder(created.id);
+  };
+
+  const handleCloseAddItems = () => {
+    setAddingToOrder(null);
+    requestAnimationFrame(() => {
+      document.getElementById("app-main")?.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  };
 
   const getItemPrice = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.price || 0;
   const getItemName = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.name || "Unknown";
@@ -239,7 +249,7 @@ export default function OrdersPage() {
       {/* Add Items Dialog */}
       <AddItemsDialog
         open={!!addingToOrder}
-        onClose={() => setAddingToOrder(null)}
+        onClose={handleCloseAddItems}
         menu={menu}
         orderId={addingToOrder}
         order={dayOrders.find((o) => o.id === addingToOrder)}
