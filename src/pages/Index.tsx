@@ -36,9 +36,15 @@ export default function Index() {
     <div className="mx-auto flex min-h-[100dvh] max-w-lg flex-col">
       {/* Header */}
       <header className="flex items-center justify-between px-4 pt-3 pb-2">
-        <h1 className="font-display text-xl font-bold tracking-tight">
-          Truck<span className="text-primary">POS</span>
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="font-display text-xl font-bold tracking-tight">
+            Truck<span className="text-primary">POS</span>
+          </h1>
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-semibold text-green-600 dark:text-green-400">
+            <Wifi className="h-3 w-3 animate-pulse" />
+            Live
+          </span>
+        </div>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDark(!dark)}>
           {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
