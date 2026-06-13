@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ClipboardList, Settings, Package, Moon, Sun, Receipt, TrendingUp } from "lucide-react";
+import { ClipboardList, Settings, Package, Moon, Sun, Receipt, TrendingUp, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import OrdersPage from "@/pages/OrdersPage";
 import MenuSettingsPage from "@/pages/MenuSettingsPage";
