@@ -319,17 +319,32 @@ export default function StaffPage() {
                   {e.role} • {formatRupee(Number(e.daily_wage))}/day
                 </p>
               </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  if (confirm(`Delete ${e.name}? This removes their attendance and payouts.`)) {
-                    deleteEmployee(e.id);
-                  }
-                }}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              <div className="flex gap-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => {
+                    setEditFor(e);
+                    setEditName(e.name);
+                    setEditRole(e.role);
+                    setEditWage(String(e.daily_wage));
+                    setEditOpen(true);
+                  }}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => {
+                    if (confirm(`Delete ${e.name}? This removes their attendance and payouts.`)) {
+                      deleteEmployee(e.id);
+                    }
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
             </div>
           ))}
         </TabsContent>
@@ -359,6 +374,37 @@ export default function StaffPage() {
           </div>
           <DialogFooter>
             <Button onClick={handlePay}>Record Payout</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit {editFor?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Name</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="e.g. Ramesh" />
+            </div>
+            <div className="space-y-1">
+              <Label>Role</Label>
+              <Input value={editRole} onChange={(e) => setEditRole(e.target.value)} placeholder="e.g. Cook, Helper" />
+            </div>
+            <div className="space-y-1">
+              <Label>Daily Wage (₹)</Label>
+              <Input
+                inputMode="numeric"
+                value={editWage}
+                onChange={(e) => setEditWage(e.target.value.replace(/[^0-9.]/g, ""))}
+                placeholder="e.g. 500"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdate}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
