@@ -57,14 +57,17 @@ export function useStaff() {
 
   const addEmployee = async (name: string, role: string, daily_wage: number) => {
     await supabase.from("employees").insert({ name, role, daily_wage });
+    await refresh();
   };
 
   const updateEmployee = async (id: string, patch: Partial<Omit<Employee, "id">>) => {
     await supabase.from("employees").update(patch).eq("id", id);
+    await refresh();
   };
 
   const deleteEmployee = async (id: string) => {
     await supabase.from("employees").delete().eq("id", id);
+    await refresh();
   };
 
   const setAttendanceFor = async (employee_id: string, date_key: string, present: boolean) => {
@@ -74,14 +77,17 @@ export function useStaff() {
     } else {
       await supabase.from("attendance").insert({ employee_id, date_key, present });
     }
+    await refresh();
   };
 
   const addPayout = async (employee_id: string, date_key: string, amount: number, note?: string) => {
     await supabase.from("salary_payouts").insert({ employee_id, date_key, amount, note: note || null });
+    await refresh();
   };
 
   const deletePayout = async (id: string) => {
     await supabase.from("salary_payouts").delete().eq("id", id);
+    await refresh();
   };
 
   return {
