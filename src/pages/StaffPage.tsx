@@ -36,6 +36,13 @@ export default function StaffPage() {
   const [payoutAmt, setPayoutAmt] = useState("");
   const [payoutNote, setPayoutNote] = useState("");
 
+  // Edit dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editFor, setEditFor] = useState<Employee | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editRole, setEditRole] = useState("");
+  const [editWage, setEditWage] = useState("");
+
   const attMap = useMemo(() => {
     const m = new Map<string, { present: boolean; without_helper: boolean }>();
     attendance.forEach((a) =>
