@@ -55,12 +55,6 @@ export default function StaffPage() {
       return { emp: e, present, earned, paid, balance: earned - paid };
     });
   }, [employees, attendance, payouts]);
-      const paid = payouts
-        .filter((p) => p.employee_id === e.id)
-        .reduce((s, p) => s + Number(p.amount || 0), 0);
-      return { emp: e, present, earned, paid, balance: earned - paid };
-    });
-  }, [employees, attendance, payouts]);
 
   const handleAdd = async () => {
     if (!name.trim() || !role.trim()) {
