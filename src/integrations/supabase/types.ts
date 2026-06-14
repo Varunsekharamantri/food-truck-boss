@@ -21,6 +21,8 @@ export type Database = {
           employee_id: string
           id: string
           present: boolean
+          wage_snapshot: number
+          without_helper: boolean
         }
         Insert: {
           created_at?: string
@@ -28,6 +30,8 @@ export type Database = {
           employee_id: string
           id?: string
           present?: boolean
+          wage_snapshot?: number
+          without_helper?: boolean
         }
         Update: {
           created_at?: string
@@ -35,6 +39,8 @@ export type Database = {
           employee_id?: string
           id?: string
           present?: boolean
+          wage_snapshot?: number
+          without_helper?: boolean
         }
         Relationships: [
           {

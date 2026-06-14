@@ -37,15 +37,18 @@ export default function StaffPage() {
   const [payoutNote, setPayoutNote] = useState("");
 
   const attMap = useMemo(() => {
-    const m = new Map<string, boolean>();
-    attendance.forEach((a) => m.set(`${a.employee_id}|${a.date_key}`, a.present));
+    const m = new Map<string, { present: boolean; without_helper: boolean }>();
+    attendance.forEach((a) =>
+      m.set(`${a.employee_id}|${a.date_key}`, { present: a.present, without_helper: a.without_helper }),
+    );
     return m;
   }, [attendance]);
 
   const summary = useMemo(() => {
     return employees.map((e) => {
-      const present = attendance.filter((a) => a.employee_id === e.id && a.present).length;
-      const earned = present * Number(e.daily_wage || 0);
+      const empAtt = attendance.filter((a) => a.employee_id === e.id && a.present);
+      const present = empAtt.length;
+      const earned = empAtt.reduce((s, a) => s + Number(a.wage_snapshot || 0), 0);
       const paid = payouts
         .filter((p) => p.employee_id === e.id)
         .reduce((s, p) => s + Number(p.amount || 0), 0);
@@ -151,33 +154,50 @@ export default function StaffPage() {
                 <p className="py-6 text-center text-sm text-muted-foreground">No employees yet.</p>
               )}
               {employees.map((e) => {
-                const present = attMap.get(`${e.id}|${dateKey}`);
+                const rec = attMap.get(`${e.id}|${dateKey}`);
+                const present = rec?.present;
+                const withoutHelper = rec?.without_helper ?? false;
+                const isMaster = e.role.trim().toLowerCase() === "master";
                 return (
-                  <div key={e.id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <p className="font-medium">{e.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {e.role} • {formatRupee(Number(e.daily_wage))}/day
-                      </p>
+                  <div key={e.id} className="rounded-lg border p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{e.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {e.role} • {formatRupee(Number(e.daily_wage))}/day
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant={present === true ? "default" : "outline"}
+                          onClick={() => setAttendanceFor(e.id, dateKey, true, { without_helper: withoutHelper })}
+                          className="gap-1"
+                        >
+                          <Check className="h-4 w-4" /> P
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={present === false ? "destructive" : "outline"}
+                          onClick={() => setAttendanceFor(e.id, dateKey, false, { without_helper: false })}
+                          className="gap-1"
+                        >
+                          <X className="h-4 w-4" /> A
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
+                    {isMaster && present === true && (
                       <Button
                         size="sm"
-                        variant={present === true ? "default" : "outline"}
-                        onClick={() => setAttendanceFor(e.id, dateKey, true)}
-                        className="gap-1"
+                        variant={withoutHelper ? "default" : "outline"}
+                        onClick={() => setAttendanceFor(e.id, dateKey, true, { without_helper: !withoutHelper })}
+                        className="w-full text-xs"
                       >
-                        <Check className="h-4 w-4" /> P
+                        {withoutHelper
+                          ? `Without Helper • ${formatRupee(1400)}`
+                          : "Mark Without Helper (₹1400)"}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant={present === false ? "destructive" : "outline"}
-                        onClick={() => setAttendanceFor(e.id, dateKey, false)}
-                        className="gap-1"
-                      >
-                        <X className="h-4 w-4" /> A
-                      </Button>
-                    </div>
+                    )}
                   </div>
                 );
               })}

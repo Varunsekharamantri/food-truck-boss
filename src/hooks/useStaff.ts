@@ -14,7 +14,13 @@ export type Attendance = {
   employee_id: string;
   date_key: string;
   present: boolean;
+  wage_snapshot: number;
+  without_helper: boolean;
 };
+
+export const MASTER_SOLO_WAGE = 1400;
+
+
 
 export type Payout = {
   id: string;
@@ -70,12 +76,27 @@ export function useStaff() {
     await refresh();
   };
 
-  const setAttendanceFor = async (employee_id: string, date_key: string, present: boolean) => {
+  const setAttendanceFor = async (
+    employee_id: string,
+    date_key: string,
+    present: boolean,
+    opts?: { without_helper?: boolean; wage_override?: number },
+  ) => {
+    const emp = employees.find((e) => e.id === employee_id);
     const existing = attendance.find((a) => a.employee_id === employee_id && a.date_key === date_key);
+    const without_helper = opts?.without_helper ?? existing?.without_helper ?? false;
+    const wage_snapshot = present
+      ? opts?.wage_override ?? (without_helper ? MASTER_SOLO_WAGE : Number(emp?.daily_wage || 0))
+      : 0;
     if (existing) {
-      await supabase.from("attendance").update({ present }).eq("id", existing.id);
+      await supabase
+        .from("attendance")
+        .update({ present, without_helper, wage_snapshot })
+        .eq("id", existing.id);
     } else {
-      await supabase.from("attendance").insert({ employee_id, date_key, present });
+      await supabase
+        .from("attendance")
+        .insert({ employee_id, date_key, present, without_helper, wage_snapshot });
     }
     await refresh();
   };
