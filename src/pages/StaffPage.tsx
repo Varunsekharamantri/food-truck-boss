@@ -81,6 +81,23 @@ export default function StaffPage() {
     toast.success("Employee added");
   };
 
+  const handleUpdate = async () => {
+    if (!editFor) return;
+    if (!editName.trim() || !editRole.trim()) {
+      toast.error("Name and role are required");
+      return;
+    }
+    const w = Number(editWage);
+    if (!w || w < 0) {
+      toast.error("Enter a valid daily wage");
+      return;
+    }
+    await updateEmployee(editFor.id, { name: editName.trim(), role: editRole.trim(), daily_wage: w });
+    setEditOpen(false);
+    setEditFor(null);
+    toast.success("Employee updated");
+  };
+
   const handlePay = async () => {
     if (!payoutFor) return;
     const amt = Number(payoutAmt);
