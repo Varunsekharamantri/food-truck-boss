@@ -1,61 +1,48 @@
-# Expenses page with AI screenshot scanning
+## Plan: Generate TruckPOS PRD (DOCX)
 
-A new **Expenses** tab where you log daily spends. You can either type entries manually or upload a screenshot (UPI app, bill, receipt) and AI auto-fills the fields — you confirm and save.
+Produce a single Product Requirements Document for the TruckPOS app, formatted as a polished `.docx` file delivered as an artifact under `/mnt/documents/TruckPOS_PRD.docx`.
 
-## User flow
+### Audience & Depth
+- **Audience:** Product team / general stakeholders.
+- **Tone:** Balanced — user flows, feature breakdowns, data model overview, screen descriptions. Not investor pitch, not raw dev spec.
 
-1. Tap **Expenses** in the bottom nav.
-2. Tap **+ Add Expense**.
-3. Two options in the dialog:
-   - **Upload screenshot** → AI reads it → fields auto-fill
-   - **Type manually**
-4. Fields shown (all editable before saving):
-   - Item / description (e.g. "Onions", "Gas refill")
-   - Amount (₹)
-   - Date (defaults to today, DD-MMM-YYYY)
-   - Merchant / paid to
-5. Save → appears in today's list with running daily total.
+### PRD Structure
 
-## Storage
+1. **Document Header** — Product name (TruckPOS), version, date (14-Jun-2026), owner, status.
+2. **Executive Summary** — One-paragraph product overview: mobile-first PWA POS for food trucks, India-focused (₹), real-time multi-device sync via Lovable Cloud backend.
+3. **Goals & Non-Goals** — What the product solves; what is explicitly out of scope (multi-tenant, online ordering, payment gateway integration).
+4. **Target Users & Personas** — Food truck owner-operator, cook, helper/cashier.
+5. **Key Concepts & Glossary** — Order, Item Status, Bucket, Parcel charge, Cook To-Do, Daily Sales, Payout.
+6. **Information Architecture** — 6-tab bottom-nav layout (Orders, Menu, Stock, Expenses, Staff, Profits) with header (brand, live indicator, theme toggle).
+7. **Module Specifications** — One section per tab, each with:
+   - Purpose
+   - Primary user flows (step-by-step)
+   - Screen layout & key UI elements
+   - Business rules / formulas
+   - Data entities involved
+8. **Cross-Cutting Features** — Theme (light/dark), realtime sync, PWA installability, offline behavior, toast notifications, date navigation pattern.
+9. **Data Model Overview** — Tables: `menu_items`, `orders` (JSON items), `inventory`, `expenses`, `daily_sales`, `employees`, `attendance`, `salary_payouts`. Plain-English schema, not SQL.
+10. **Business Logic & Formulas** — Order status derivation, line totals with parcel charge (+₹10/unit), order auto-renumbering on delete, Master "Without Helper" wage override (₹1400), salary balance = earned − paid, weekly/monthly profit aggregation.
+11. **Design System** — Saffron accent, Space Grotesk display + JetBrains Mono numeric font, bucket color tokens, mobile-first POS button sizing.
+12. **Standards & Formatting** — ₹ currency, DD-MMM-YYYY dates, item categorization rules (Rice/Noodles, Starters, Shawarma, BBQ, Add-ons).
+13. **AI Features** — Expense screenshot extraction via Lovable AI Gateway (Gemini multimodal) edge function.
+14. **Security Model** — Authenticated-only access, RLS on all tables, single-business shared-data model.
+15. **Success Metrics** — Daily orders processed, sync latency, attendance compliance, expense capture rate.
+16. **Future Considerations** — Inventory deduction on order, multi-truck support, customer-facing receipts, payment gateway.
 
-LocalStorage now (key `truckpos_expenses_v1`), matching the rest of the app. Schema designed so a future Cloud migration is a drop-in swap.
+### Technical Implementation
 
-```ts
-interface Expense {
-  id: string;
-  dateKey: string;        // YYYY-MM-DD
-  item: string;
-  amount: number;
-  merchant?: string;
-  createdAt: string;
-}
-```
+- Use the `docx` skill (already documented in context).
+- Generate via `docx-js` Node script, US Letter page size, Arial body / bold Arial headings (universally available), saffron accent for headings via custom color.
+- Use proper `Heading1`/`Heading2` styles with `outlineLevel` so the TOC works.
+- Include a **Table of Contents** after the executive summary.
+- Use **tables** for: tab summary, data model overview, business formulas, glossary. All tables use `WidthType.DXA` with matched `columnWidths` + per-cell widths; cell margins 80/120; `ShadingType.CLEAR` for header row shading in light saffron.
+- Use **bullet lists** via `LevelFormat.BULLET` numbering config (never unicode `•`).
+- Run `validate_document.py` after generation.
+- QA: convert to PDF via LibreOffice, render each page as JPG with `pdftoppm`, read every page image to check for overflow, broken tables, missing TOC entries; fix and re-run before delivery.
 
-## AI extraction
+### Deliverable
 
-Uses Lovable AI Gateway (Gemini multimodal — reads images natively). Since the app is currently 100% client-side with no backend, the simplest path:
-
-- Enable **Lovable Cloud** (one-time) and add a tiny Edge Function `extract-expense` that accepts a base64 image and returns `{ item, amount, date, merchant }` using `google/gemini-3-flash-preview` with a structured output schema.
-- Frontend converts the uploaded image to base64, calls the function, populates the form. User reviews and saves.
-
-Why a function: `LOVABLE_API_KEY` must stay server-side — it can't live in the browser. This is the only backend touch; expense storage itself stays in localStorage.
-
-If you'd rather not enable Cloud yet, alternative is manual-entry-only for now and add AI later — but you'd lose the main convenience.
-
-## Files to add/change
-
-- `src/hooks/useExpenses.ts` — CRUD + localStorage persistence
-- `src/pages/ExpensesPage.tsx` — list + daily total + Add button
-- `src/components/AddExpenseDialog.tsx` — upload + form, calls edge function
-- `src/App.tsx` — route `/expenses`
-- `src/components/NavLink.tsx` or wherever tabs render — add Expenses tab (icon: `Receipt` from lucide)
-- `supabase/functions/extract-expense/index.ts` — Gemini vision call returning structured JSON
-
-## Out of scope (can add later)
-
-- Expense categories/tags
-- Monthly/weekly reports & charts
-- Editing/deleting past expenses (will include basic delete; full edit can come later if you want)
-- Cloud sync (schema is ready for it)
-
-Confirm and I'll build it. Heads-up: this will enable **Lovable Cloud** on your project so the AI vision call can run securely.
+- File: `/mnt/documents/TruckPOS_PRD.docx`
+- Surfaced via `<presentation-artifact>` tag with `mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"`.
+- Short closing note to user.
