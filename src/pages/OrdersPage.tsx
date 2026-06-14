@@ -285,10 +285,9 @@ export default function OrdersPage() {
         <button
           onClick={handleBackToTop}
           aria-label="Back to top and show Cook To-Do"
-          className="fixed bottom-20 right-4 z-40 flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/40 active:scale-95 transition-transform"
+          className="fixed bottom-20 right-4 z-40 flex items-center justify-center w-10 h-10 rounded-full bg-orange-500 text-white shadow-lg shadow-orange-500/40 active:scale-95 transition-transform"
         >
-          <ChevronUp className="h-4 w-4" />
-          Cook To-Do
+          <ChevronUp className="h-5 w-5" />
         </button>
       )}
     </div>
