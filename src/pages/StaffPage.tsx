@@ -19,7 +19,7 @@ import { formatRupee, formatDateKey, formatDisplay, getNextDay, getPrevDay } fro
 import { toast } from "sonner";
 
 export default function StaffPage() {
-  const { employees, attendance, payouts, addEmployee, deleteEmployee, setAttendanceFor, addPayout, deletePayout } =
+  const { employees, attendance, payouts, addEmployee, updateEmployee, deleteEmployee, setAttendanceFor, addPayout, deletePayout } =
     useStaff();
 
   const [date, setDate] = useState(new Date());
