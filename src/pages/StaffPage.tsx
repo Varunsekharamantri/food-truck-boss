@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Plus, Trash2, ChevronLeft, ChevronRight, Wallet, Check, X } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, ChevronRight, Wallet, Check, X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
