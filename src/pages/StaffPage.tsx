@@ -37,15 +37,24 @@ export default function StaffPage() {
   const [payoutNote, setPayoutNote] = useState("");
 
   const attMap = useMemo(() => {
-    const m = new Map<string, boolean>();
-    attendance.forEach((a) => m.set(`${a.employee_id}|${a.date_key}`, a.present));
+    const m = new Map<string, { present: boolean; without_helper: boolean }>();
+    attendance.forEach((a) =>
+      m.set(`${a.employee_id}|${a.date_key}`, { present: a.present, without_helper: a.without_helper }),
+    );
     return m;
   }, [attendance]);
 
   const summary = useMemo(() => {
     return employees.map((e) => {
-      const present = attendance.filter((a) => a.employee_id === e.id && a.present).length;
-      const earned = present * Number(e.daily_wage || 0);
+      const empAtt = attendance.filter((a) => a.employee_id === e.id && a.present);
+      const present = empAtt.length;
+      const earned = empAtt.reduce((s, a) => s + Number(a.wage_snapshot || 0), 0);
+      const paid = payouts
+        .filter((p) => p.employee_id === e.id)
+        .reduce((s, p) => s + Number(p.amount || 0), 0);
+      return { emp: e, present, earned, paid, balance: earned - paid };
+    });
+  }, [employees, attendance, payouts]);
       const paid = payouts
         .filter((p) => p.employee_id === e.id)
         .reduce((s, p) => s + Number(p.amount || 0), 0);
