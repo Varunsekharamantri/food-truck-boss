@@ -1,19 +1,21 @@
 import { useState, useEffect } from "react";
-import { ClipboardList, Settings, Package, Moon, Sun, Receipt, TrendingUp, Wifi } from "lucide-react";
+import { ClipboardList, Settings, Package, Moon, Sun, Receipt, TrendingUp, Wifi, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import OrdersPage from "@/pages/OrdersPage";
 import MenuSettingsPage from "@/pages/MenuSettingsPage";
 import InventoryPage from "@/pages/InventoryPage";
 import ExpensesPage from "@/pages/ExpensesPage";
 import ProfitsPage from "@/pages/ProfitsPage";
+import StaffPage from "@/pages/StaffPage";
 
-type Tab = "orders" | "menu" | "inventory" | "expenses" | "profits";
+type Tab = "orders" | "menu" | "inventory" | "expenses" | "profits" | "staff";
 
 const TABS: { key: Tab; label: string; icon: typeof ClipboardList }[] = [
   { key: "orders", label: "Orders", icon: ClipboardList },
   { key: "menu", label: "Menu", icon: Settings },
-  { key: "inventory", label: "Inventory", icon: Package },
+  { key: "inventory", label: "Stock", icon: Package },
   { key: "expenses", label: "Expenses", icon: Receipt },
+  { key: "staff", label: "Staff", icon: Users },
   { key: "profits", label: "Profits", icon: TrendingUp },
 ];
 
@@ -56,6 +58,7 @@ export default function Index() {
         {tab === "menu" && <MenuSettingsPage />}
         {tab === "inventory" && <InventoryPage />}
         {tab === "expenses" && <ExpensesPage />}
+        {tab === "staff" && <StaffPage />}
         {tab === "profits" && <ProfitsPage />}
       </main>
 
