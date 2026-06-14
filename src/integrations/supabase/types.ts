@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance: {
+        Row: {
+          created_at: string
+          date_key: string
+          employee_id: string
+          id: string
+          present: boolean
+        }
+        Insert: {
+          created_at?: string
+          date_key: string
+          employee_id: string
+          id?: string
+          present?: boolean
+        }
+        Update: {
+          created_at?: string
+          date_key?: string
+          employee_id?: string
+          id?: string
+          present?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_sales: {
         Row: {
           amount: number
@@ -34,6 +66,36 @@ export type Database = {
           created_at?: string
           date_key?: string
           id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          active: boolean
+          created_at: string
+          daily_wage: number
+          id: string
+          name: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          daily_wage?: number
+          id?: string
+          name: string
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          daily_wage?: number
+          id?: string
+          name?: string
+          role?: string
           updated_at?: string
         }
         Relationships: []
@@ -154,6 +216,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      salary_payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          date_key: string
+          employee_id: string
+          id: string
+          note: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          date_key: string
+          employee_id: string
+          id?: string
+          note?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date_key?: string
+          employee_id?: string
+          id?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_payouts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
