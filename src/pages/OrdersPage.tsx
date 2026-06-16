@@ -453,9 +453,16 @@ function AddItemsDialog({
               {items.map((item) => {
                 const qty = getQty(item.id);
                 return (
-                  <div key={item.id} className="flex items-center justify-between py-1.5">
-                    <div>
-                      <p className="text-sm font-medium">{item.name}</p>
+                  <div key={item.id} className="flex items-center justify-between gap-2 py-1.5">
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="h-full w-full" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{item.name}</p>
                       <p className="font-mono text-xs text-muted-foreground">{formatRupee(item.price)}</p>
                     </div>
                     <div className="flex items-center gap-1">
