@@ -375,7 +375,7 @@ export function useStore() {
   }, []);
 
   return {
-    menu, addMenuItem, updateMenuItem, deleteMenuItem, generateMenuItemImage,
+    menu, addMenuItem, updateMenuItem, deleteMenuItem, generateMenuItemImage, uploadMenuItemImage,
     orders, getOrdersForDate, createOrder, updateOrderStatus, addItemToOrder, removeItemFromOrder, updateItemStatus, toggleItemFlag, deleteOrder,
     inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem,
   };
