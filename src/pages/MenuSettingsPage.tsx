@@ -82,6 +82,13 @@ export default function MenuSettingsPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-bold">Menu Items</h2>
         <div className="flex gap-2">
