@@ -8,6 +8,7 @@ export interface MenuItem {
   name: string;
   bucket: "Rice / Noodles" | "Starters" | "Shawarma" | "BBQ" | "Add-ons";
   price: number;
+  imageUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
