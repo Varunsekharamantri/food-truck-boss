@@ -207,6 +207,7 @@ export default function OrdersPage() {
               order={order}
               getItemName={getItemName}
               getItemPrice={getItemPrice}
+              getItemImage={getItemImage}
               orderTotal={orderTotal(order)}
               onAddItems={() => setAddingToOrder(order.id)}
               onDelete={() => deleteOrder(order.id)}
@@ -227,6 +228,7 @@ export default function OrdersPage() {
               order={order}
               getItemName={getItemName}
               getItemPrice={getItemPrice}
+              getItemImage={getItemImage}
               orderTotal={orderTotal(order)}
               onAddItems={() => {}}
               onDelete={() => deleteOrder(order.id)}
@@ -299,6 +301,7 @@ function OrderCard({
   order,
   getItemName,
   getItemPrice,
+  getItemImage,
   orderTotal,
   onAddItems,
   onDelete,
@@ -309,6 +312,7 @@ function OrderCard({
   order: CustomerOrder;
   getItemName: (id: string) => string;
   getItemPrice: (id: string) => number;
+  getItemImage: (id: string) => string | null;
   orderTotal: number;
   onAddItems: () => void;
   onDelete: () => void;
