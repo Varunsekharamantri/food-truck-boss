@@ -75,6 +75,7 @@ export default function OrdersPage() {
 
   const getItemPrice = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.price || 0;
   const getItemName = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.name || "Unknown";
+  const getItemImage = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.imageUrl || null;
 
   const itemLineTotal = (i: OrderItemEntry) =>
     i.quantity * getItemPrice(i.menuItemId) + (i.parcel ? PARCEL_CHARGE * i.quantity : 0);
@@ -206,6 +207,7 @@ export default function OrdersPage() {
               order={order}
               getItemName={getItemName}
               getItemPrice={getItemPrice}
+              getItemImage={getItemImage}
               orderTotal={orderTotal(order)}
               onAddItems={() => setAddingToOrder(order.id)}
               onDelete={() => deleteOrder(order.id)}
@@ -226,6 +228,7 @@ export default function OrdersPage() {
               order={order}
               getItemName={getItemName}
               getItemPrice={getItemPrice}
+              getItemImage={getItemImage}
               orderTotal={orderTotal(order)}
               onAddItems={() => {}}
               onDelete={() => deleteOrder(order.id)}
@@ -298,6 +301,7 @@ function OrderCard({
   order,
   getItemName,
   getItemPrice,
+  getItemImage,
   orderTotal,
   onAddItems,
   onDelete,
@@ -308,6 +312,7 @@ function OrderCard({
   order: CustomerOrder;
   getItemName: (id: string) => string;
   getItemPrice: (id: string) => number;
+  getItemImage: (id: string) => string | null;
   orderTotal: number;
   onAddItems: () => void;
   onDelete: () => void;
@@ -348,6 +353,11 @@ function OrderCard({
             const parcelAdd = item.parcel ? PARCEL_CHARGE * item.quantity : 0;
             return (
               <div key={item.id} className="flex items-start justify-between text-sm gap-2">
+                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+                  {getItemImage(item.menuItemId) ? (
+                    <img src={getItemImage(item.menuItemId)!} alt={getItemName(item.menuItemId)} className="h-full w-full object-cover" loading="lazy" />
+                  ) : null}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1 flex-wrap">
                     <span className="truncate">
