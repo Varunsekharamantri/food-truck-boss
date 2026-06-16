@@ -168,6 +168,7 @@ export type Database = {
           bucket: string
           created_at: string
           id: string
+          image_url: string | null
           name: string
           price: number
           updated_at: string
@@ -176,6 +177,7 @@ export type Database = {
           bucket: string
           created_at?: string
           id?: string
+          image_url?: string | null
           name: string
           price: number
           updated_at?: string
@@ -184,6 +186,7 @@ export type Database = {
           bucket?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           name?: string
           price?: number
           updated_at?: string

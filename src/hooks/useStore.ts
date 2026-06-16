@@ -8,6 +8,7 @@ export interface MenuItem {
   name: string;
   bucket: "Rice / Noodles" | "Starters" | "Shawarma" | "BBQ" | "Add-ons";
   price: number;
+  imageUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -126,12 +127,13 @@ const DEFAULT_MENU: Omit<MenuItem, "id" | "createdAt" | "updatedAt">[] = [
   { name: "Parcel", bucket: "Add-ons", price: 10 },
 ];
 
-interface MenuRow { id: string; name: string; bucket: string; price: number | string; created_at: string; updated_at: string }
+interface MenuRow { id: string; name: string; bucket: string; price: number | string; image_url?: string | null; created_at: string; updated_at: string }
 interface InvRow { id: string; name: string; quantity: number | string; unit: string; cost_per_unit: number | string; updated_at: string }
 interface OrderRow { id: string; order_number: number; date_key: string; ts: string; status: string; items: OrderItemEntry[] }
 
 const menuFromRow = (r: MenuRow): MenuItem => ({
   id: r.id, name: r.name, bucket: r.bucket as Bucket, price: Number(r.price),
+  imageUrl: r.image_url ?? null,
   createdAt: r.created_at, updatedAt: r.updated_at,
 });
 const invFromRow = (r: InvRow): InventoryItem => ({
@@ -158,7 +160,7 @@ export function useStore() {
     // One-time seed if empty
     if (!seededRef.current && rows.length === 0) {
       seededRef.current = true;
-      await supabase.from("menu_items").insert(DEFAULT_MENU);
+      await supabase.from("menu_items").insert(DEFAULT_MENU.map((m) => ({ name: m.name, bucket: m.bucket, price: m.price })));
       const { data: seeded } = await supabase.from("menu_items").select("*").order("created_at", { ascending: true });
       if (seeded) setMenu((seeded as MenuRow[]).map(menuFromRow));
     }
@@ -205,6 +207,23 @@ export function useStore() {
     const { error } = await supabase.from("menu_items").delete().eq("id", id);
     if (error) toast({ title: "Delete failed", description: error.message, variant: "destructive" });
   }, []);
+
+  const generateMenuItemImage = useCallback(async (id: string) => {
+    const item = menu.find((m) => m.id === id);
+    if (!item) return;
+    const { data, error } = await supabase.functions.invoke("generate-menu-image", {
+      body: { itemId: id, name: item.name, bucket: item.bucket },
+    });
+    if (error || (data && (data as { error?: string }).error)) {
+      toast({
+        title: "Image generation failed",
+        description: error?.message || (data as { error?: string }).error,
+        variant: "destructive",
+      });
+      return;
+    }
+    await loadMenu();
+  }, [menu, loadMenu]);
 
   // ORDERS
   const getOrdersForDate = useCallback((dateKey: string) => orders.filter((o) => o.dateKey === dateKey), [orders]);
@@ -330,7 +349,7 @@ export function useStore() {
   }, []);
 
   return {
-    menu, addMenuItem, updateMenuItem, deleteMenuItem,
+    menu, addMenuItem, updateMenuItem, deleteMenuItem, generateMenuItemImage,
     orders, getOrdersForDate, createOrder, updateOrderStatus, addItemToOrder, removeItemFromOrder, updateItemStatus, toggleItemFlag, deleteOrder,
     inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem,
   };

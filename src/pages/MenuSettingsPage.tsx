@@ -7,13 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, ImageIcon, Loader2, Sparkles } from "lucide-react";
 
 export default function MenuSettingsPage() {
-  const { menu, addMenuItem, updateMenuItem, deleteMenuItem } = useStore();
+  const { menu, addMenuItem, updateMenuItem, deleteMenuItem, generateMenuItemImage } = useStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [form, setForm] = useState({ name: "", bucket: "Rice / Noodles" as Bucket, price: "" });
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+
+  const handleGenerate = async (id: string) => {
+    setGeneratingId(id);
+    await generateMenuItemImage(id);
+    setGeneratingId(null);
+  };
 
   const openAdd = () => {
     setEditing(null);
@@ -55,15 +62,39 @@ export default function MenuSettingsPage() {
             <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">{bucket}</p>
             <div className="flex flex-col gap-2">
               {items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between rounded-lg bg-card p-3 shadow-sm">
-                  <div>
-                    <p className="font-medium">{item.name}</p>
-                    <p className="font-mono text-sm text-primary font-semibold">{formatRupee(item.price)}</p>
+                <div key={item.id} className="flex items-center gap-3 rounded-lg bg-card p-3 shadow-sm">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                        <ImageIcon className="h-6 w-6" />
+                      </div>
+                    )}
+                    {generatingId === item.id && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/70">
+                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{item.name}</p>
+                    <p className="font-mono text-sm font-semibold text-primary">{formatRupee(item.price)}</p>
                     <p className="text-[10px] text-muted-foreground">
                       Updated {format(new Date(item.updatedAt), "dd-MMM-yyyy")}
                     </p>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex flex-col gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-primary"
+                      disabled={generatingId === item.id}
+                      onClick={() => handleGenerate(item.id)}
+                      title={item.imageUrl ? "Regenerate image" : "Generate image"}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
