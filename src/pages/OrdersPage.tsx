@@ -353,6 +353,11 @@ function OrderCard({
             const parcelAdd = item.parcel ? PARCEL_CHARGE * item.quantity : 0;
             return (
               <div key={item.id} className="flex items-start justify-between text-sm gap-2">
+                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+                  {getItemImage(item.menuItemId) ? (
+                    <img src={getItemImage(item.menuItemId)!} alt={getItemName(item.menuItemId)} className="h-full w-full object-cover" loading="lazy" />
+                  ) : null}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1 flex-wrap">
                     <span className="truncate">
