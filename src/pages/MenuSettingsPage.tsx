@@ -115,7 +115,7 @@ export default function MenuSettingsPage() {
                         <ImageIcon className="h-6 w-6" />
                       </div>
                     )}
-                    {generatingId === item.id && (
+                    {(generatingId === item.id || uploadingId === item.id) && (
                       <div className="absolute inset-0 flex items-center justify-center bg-background/70">
                         <Loader2 className="h-5 w-5 animate-spin text-primary" />
                       </div>
