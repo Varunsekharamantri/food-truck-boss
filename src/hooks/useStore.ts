@@ -225,6 +225,32 @@ export function useStore() {
     await loadMenu();
   }, [menu, loadMenu]);
 
+  const uploadMenuItemImage = useCallback(async (id: string, file: File) => {
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${id}/${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("menu-images").upload(path, file, {
+      contentType: file.type || "image/jpeg",
+      upsert: true,
+    });
+    if (upErr) {
+      toast({ title: "Upload failed", description: upErr.message, variant: "destructive" });
+      return;
+    }
+    const { data: signed, error: signErr } = await supabase.storage
+      .from("menu-images")
+      .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+    if (signErr || !signed) {
+      toast({ title: "Upload failed", description: signErr?.message || "Could not sign URL", variant: "destructive" });
+      return;
+    }
+    const { error: updErr } = await supabase.from("menu_items").update({ image_url: signed.signedUrl }).eq("id", id);
+    if (updErr) {
+      toast({ title: "Save failed", description: updErr.message, variant: "destructive" });
+      return;
+    }
+    await loadMenu();
+  }, [loadMenu]);
+
   // ORDERS
   const getOrdersForDate = useCallback((dateKey: string) => orders.filter((o) => o.dateKey === dateKey), [orders]);
 
