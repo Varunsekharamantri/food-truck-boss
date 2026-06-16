@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useStore, BUCKETS, type Bucket, type MenuItem } from "@/hooks/useStore";
 import { formatRupee } from "@/lib/dateUtils";
 import { format } from "date-fns";
@@ -7,21 +7,40 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, ImageIcon, Loader2, Sparkles } from "lucide-react";
+import { Plus, Pencil, Trash2, ImageIcon, Loader2, Sparkles, Upload } from "lucide-react";
 
 export default function MenuSettingsPage() {
-  const { menu, addMenuItem, updateMenuItem, deleteMenuItem, generateMenuItemImage } = useStore();
+  const { menu, addMenuItem, updateMenuItem, deleteMenuItem, generateMenuItemImage, uploadMenuItemImage } = useStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [form, setForm] = useState({ name: "", bucket: "Rice / Noodles" as Bucket, price: "" });
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [bulkRunning, setBulkRunning] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
 
   const handleGenerate = async (id: string) => {
     setGeneratingId(id);
     await generateMenuItemImage(id);
     setGeneratingId(null);
+  };
+
+  const triggerUpload = (id: string) => {
+    setUploadTargetId(id);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const id = uploadTargetId;
+    e.target.value = "";
+    if (!file || !id) return;
+    setUploadingId(id);
+    await uploadMenuItemImage(id, file);
+    setUploadingId(null);
+    setUploadTargetId(null);
   };
 
   const handleGenerateAll = async () => {
@@ -63,6 +82,13 @@ export default function MenuSettingsPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-bold">Menu Items</h2>
         <div className="flex gap-2">
@@ -96,7 +122,7 @@ export default function MenuSettingsPage() {
                         <ImageIcon className="h-6 w-6" />
                       </div>
                     )}
-                    {generatingId === item.id && (
+                    {(generatingId === item.id || uploadingId === item.id) && (
                       <div className="absolute inset-0 flex items-center justify-center bg-background/70">
                         <Loader2 className="h-5 w-5 animate-spin text-primary" />
                       </div>
@@ -110,6 +136,16 @@ export default function MenuSettingsPage() {
                     </p>
                   </div>
                   <div className="flex flex-col gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      disabled={uploadingId === item.id}
+                      onClick={() => triggerUpload(item.id)}
+                      title={item.imageUrl ? "Replace photo" : "Upload photo"}
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
