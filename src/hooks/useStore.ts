@@ -127,12 +127,13 @@ const DEFAULT_MENU: Omit<MenuItem, "id" | "createdAt" | "updatedAt">[] = [
   { name: "Parcel", bucket: "Add-ons", price: 10 },
 ];
 
-interface MenuRow { id: string; name: string; bucket: string; price: number | string; created_at: string; updated_at: string }
+interface MenuRow { id: string; name: string; bucket: string; price: number | string; image_url?: string | null; created_at: string; updated_at: string }
 interface InvRow { id: string; name: string; quantity: number | string; unit: string; cost_per_unit: number | string; updated_at: string }
 interface OrderRow { id: string; order_number: number; date_key: string; ts: string; status: string; items: OrderItemEntry[] }
 
 const menuFromRow = (r: MenuRow): MenuItem => ({
   id: r.id, name: r.name, bucket: r.bucket as Bucket, price: Number(r.price),
+  imageUrl: r.image_url ?? null,
   createdAt: r.created_at, updatedAt: r.updated_at,
 });
 const invFromRow = (r: InvRow): InventoryItem => ({
