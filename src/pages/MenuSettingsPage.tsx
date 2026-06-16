@@ -15,11 +15,27 @@ export default function MenuSettingsPage() {
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [form, setForm] = useState({ name: "", bucket: "Rice / Noodles" as Bucket, price: "" });
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
 
   const handleGenerate = async (id: string) => {
     setGeneratingId(id);
     await generateMenuItemImage(id);
     setGeneratingId(null);
+  };
+
+  const handleGenerateAll = async () => {
+    const missing = menu.filter((m) => !m.imageUrl);
+    if (missing.length === 0) return;
+    setBulkRunning(true);
+    setBulkProgress({ done: 0, total: missing.length });
+    for (let i = 0; i < missing.length; i++) {
+      setGeneratingId(missing[i].id);
+      await generateMenuItemImage(missing[i].id);
+      setBulkProgress({ done: i + 1, total: missing.length });
+    }
+    setGeneratingId(null);
+    setBulkRunning(false);
   };
 
   const openAdd = () => {
@@ -47,11 +63,20 @@ export default function MenuSettingsPage() {
 
   return (
     <div className="flex flex-col gap-4 pb-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-bold">Menu Items</h2>
-        <Button onClick={openAdd} size="sm">
-          <Plus className="mr-1 h-4 w-4" /> Add Item
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleGenerateAll} size="sm" variant="outline" disabled={bulkRunning || menu.every((m) => m.imageUrl)}>
+            {bulkRunning ? (
+              <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> {bulkProgress.done}/{bulkProgress.total}</>
+            ) : (
+              <><Sparkles className="mr-1 h-4 w-4" /> Generate all</>
+            )}
+          </Button>
+          <Button onClick={openAdd} size="sm">
+            <Plus className="mr-1 h-4 w-4" /> Add
+          </Button>
+        </div>
       </div>
 
       {BUCKETS.map((bucket) => {

@@ -75,6 +75,7 @@ export default function OrdersPage() {
 
   const getItemPrice = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.price || 0;
   const getItemName = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.name || "Unknown";
+  const getItemImage = (menuItemId: string) => menu.find((m) => m.id === menuItemId)?.imageUrl || null;
 
   const itemLineTotal = (i: OrderItemEntry) =>
     i.quantity * getItemPrice(i.menuItemId) + (i.parcel ? PARCEL_CHARGE * i.quantity : 0);
