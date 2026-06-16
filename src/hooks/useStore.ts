@@ -208,6 +208,23 @@ export function useStore() {
     if (error) toast({ title: "Delete failed", description: error.message, variant: "destructive" });
   }, []);
 
+  const generateMenuItemImage = useCallback(async (id: string) => {
+    const item = menu.find((m) => m.id === id);
+    if (!item) return;
+    const { data, error } = await supabase.functions.invoke("generate-menu-image", {
+      body: { itemId: id, name: item.name, bucket: item.bucket },
+    });
+    if (error || (data && (data as { error?: string }).error)) {
+      toast({
+        title: "Image generation failed",
+        description: error?.message || (data as { error?: string }).error,
+        variant: "destructive",
+      });
+      return;
+    }
+    await loadMenu();
+  }, [menu, loadMenu]);
+
   // ORDERS
   const getOrdersForDate = useCallback((dateKey: string) => orders.filter((o) => o.dateKey === dateKey), [orders]);
 
