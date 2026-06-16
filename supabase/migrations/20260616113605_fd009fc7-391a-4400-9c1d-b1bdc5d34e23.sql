@@ -1,0 +1,1 @@
+ALTER TABLE public.menu_items ADD CONSTRAINT menu_items_name_bucket_unique UNIQUE (name, bucket);

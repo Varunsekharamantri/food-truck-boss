@@ -160,7 +160,7 @@ export function useStore() {
     // One-time seed if empty
     if (!seededRef.current && rows.length === 0) {
       seededRef.current = true;
-      await supabase.from("menu_items").insert(DEFAULT_MENU.map((m) => ({ name: m.name, bucket: m.bucket, price: m.price })));
+      await supabase.from("menu_items").upsert(DEFAULT_MENU.map((m) => ({ name: m.name, bucket: m.bucket, price: m.price })), { onConflict: "name,bucket", ignoreDuplicates: true });
       const { data: seeded } = await supabase.from("menu_items").select("*").order("created_at", { ascending: true });
       if (seeded) setMenu((seeded as MenuRow[]).map(menuFromRow));
     }
