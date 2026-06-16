@@ -7,13 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, ImageIcon, Loader2, Sparkles } from "lucide-react";
 
 export default function MenuSettingsPage() {
-  const { menu, addMenuItem, updateMenuItem, deleteMenuItem } = useStore();
+  const { menu, addMenuItem, updateMenuItem, deleteMenuItem, generateMenuItemImage } = useStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [form, setForm] = useState({ name: "", bucket: "Rice / Noodles" as Bucket, price: "" });
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+
+  const handleGenerate = async (id: string) => {
+    setGeneratingId(id);
+    await generateMenuItemImage(id);
+    setGeneratingId(null);
+  };
 
   const openAdd = () => {
     setEditing(null);
