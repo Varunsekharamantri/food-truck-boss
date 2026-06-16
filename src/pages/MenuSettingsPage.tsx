@@ -132,6 +132,16 @@ export default function MenuSettingsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-8 w-8"
+                      disabled={uploadingId === item.id}
+                      onClick={() => triggerUpload(item.id)}
+                      title={item.imageUrl ? "Replace photo" : "Upload photo"}
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-8 w-8 text-primary"
                       disabled={generatingId === item.id}
                       onClick={() => handleGenerate(item.id)}
